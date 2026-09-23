@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Veta Madre</title>
+<meta name="description" content="Tycoon minero en el navegador: pica oro, plata y cobre, especula en el mercado, monta empresas y cotiza en bolsa.">
+<meta name="theme-color" content="#2a1a0e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;700;800;900&display=swap">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/hud.css">
+<link rel="stylesheet" href="css/windows.css">
+<link rel="stylesheet" href="css/overlays.css">
+<link rel="stylesheet" href="css/descenso.css">
+</head>
+<body>
+<!--APP-START-->
+<canvas id="world" aria-label="Tu mina. Toca la roca para picar." role="button" tabindex="0"></canvas>
+
+<div id="game">
+  <!-- ================= HUD ================= -->
+  <header class="hud" id="hud">
+    <button type="button" class="lvl-badge" id="lvlBadge" data-go="habilidades" aria-label="Nivel y experiencia">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><circle class="ring-bg" cx="24" cy="24" r="20"/><circle class="ring" id="xpRing" cx="24" cy="24" r="20" pathLength="100"/></svg>
+      <b id="kLevel">1</b>
+      <span class="sp-dot" id="bLvlSp" hidden>0</span>
+    </button>
+    <div class="pill pill-money" id="pillMoney">
+      <span class="pill-ico" data-icon="coin"></span>
+      <span class="pill-txt"><b id="kMoney">0 €</b><small id="kInc">0 €/s</small></span>
+    </div>
+    <div class="pill pill-metal" id="pillMetal">
+      <span class="pill-ico" id="kMetalIco" data-icon="ingot"></span>
+      <span class="pill-txt"><b id="kGold">0 mg</b><span class="mini-bar" id="capBar"><i id="capFill"></i></span></span>
+    </div>
+    <button type="button" class="pill pill-price" id="pillPrice" data-go="mercado" aria-label="Ir al mercado">
+      <span class="pill-txt"><small id="kSpotLbl">Oro</small><b id="kPrice">—</b></span>
+      <span class="chg" id="kChg">—</span>
+    </button>
+    <span class="legacy-chip" id="legacyChip" hidden></span>
+    <button type="button" class="round-btn" data-act="menu" id="navMenu" aria-label="Abrir el menú (Esc)"><span data-icon="gear"></span></button>
+  </header>
+
+  <!-- ================= DOCK ================= -->
+  <nav class="dock" id="nav" aria-label="Secciones">
+    <button type="button" data-sec="mina" id="navMina" class="gem gem-gold"><span class="d-ico" data-icon="pick"></span><span class="d-lbl">Mina</span></button>
+    <button type="button" data-sec="mercado" id="navMercado" class="gem gem-blue"><span class="d-ico" data-icon="chart"></span><span class="d-lbl">Mercado</span><span class="badge" id="bNavMk" hidden>0</span></button>
+    <button type="button" data-sec="finanzas" id="navFin" class="gem gem-green"><span class="d-ico" data-icon="bank"></span><span class="d-lbl">Finanzas</span><span class="badge warn" id="bNavFin" hidden>!</span></button>
+    <button type="button" data-sec="empresas" id="navEmpresas" class="gem gem-orange"><span class="d-ico" data-icon="factory"></span><span class="d-lbl">Empresas</span></button>
+    <button type="button" data-sec="bolsa" id="navBolsa" class="gem gem-cyan"><span class="d-ico" data-icon="bull"></span><span class="d-lbl">Bolsa</span></button>
+    <button type="button" data-sec="habilidades" id="navHab" class="gem gem-purple"><span class="d-ico" data-icon="star"></span><span class="d-lbl">Habilidades</span><span class="badge" id="bNavSp" hidden>0</span></button>
+    <button type="button" data-sec="museo" id="navMuseo" class="gem gem-sand"><span class="d-ico" data-icon="museum"></span><span class="d-lbl">Museo</span><span class="badge" id="bNavMu" hidden>0</span></button>
+    <button type="button" data-sec="logros" id="navLogros" class="gem gem-red"><span class="d-ico" data-icon="trophy"></span><span class="d-lbl">Logros</span></button>
+  </nav>
+
+  <!-- ================= MINA ================= -->
+  <section class="sec sec-mine" id="sec-mina">
+    <div class="mine-hud">
+      <div class="obj" id="objBar" hidden>
+        <span class="obj-ico" data-icon="flag"></span>
+        <span class="obj-body"><span class="obj-n" id="objN">Objetivo 1/12</span><span class="obj-txt" id="objTxt">—</span></span>
+        <span class="obj-r" id="objR">—</span>
+      </div>
+      <div class="veins" id="veinSeg" aria-label="Veta en la que picas" title="Todas tus minas producen a la vez · aquí eliges dónde picas tú"></div>
+      <span class="chip chip-depth" id="stratum">Arenisca · 2 m</span>
+      <button type="button" class="chip chip-warn" id="opsWarn" data-go="finanzas" hidden></button>
+    </div>
+
+    <div class="dig-dock" id="digDock">
+      <div class="qsell">
+        <span class="qs-info" id="qsInfo">—</span>
+        <span class="qs-acts">
+          <button type="button" class="btn btn-gold sm" data-act="qsell" data-frac="0.5" id="qs50">Vender 50 %</button>
+          <button type="button" class="btn btn-gold sm" data-act="qsell" data-frac="1" id="qs100">Vender todo</button>
+        </span>
+        <div class="auto-mine" id="autoMineBox" hidden>
+          <label class="check"><input type="checkbox" data-chk="autoMine" id="chkAutoMine"> Venta automática</label>
+          <select id="autoMineTh" aria-label="Cuándo vender"><option value="0">si el precio supera su media</option><option value="0.02">si supera la media un 2 %</option><option value="0.04">si supera la media un 4 %</option></select>
+        </div>
+      </div>
+      <button class="dig-btn" id="btnDig" type="button" aria-label="Picar (Espacio)">
+        <span class="dig-ico" data-icon="pick"></span>
+        <span class="dig-lbl">¡Pica!</span>
+        <small class="dig-sub" id="clickInfo">25 mg</small>
+      </button>
+    </div>
+
+    <aside class="shop" id="shop" aria-label="Tienda de la mina">
+      <button type="button" class="shop-handle" id="shopHandle" aria-expanded="false"><span data-icon="cart"></span> Tienda<span class="badge" id="shopBadge" hidden>0</span></button>
+      <div class="shop-body">
+        <div class="shop-head">
+          <div class="tabs" role="tablist">
+            <button role="tab" id="tabCrew" aria-selected="true" aria-controls="crewList" type="button">Equipo</button>
+            <button role="tab" id="tabUp" aria-selected="false" aria-controls="upList" type="button">Mejoras<span class="badge" id="upBadge" hidden>0</span></button>
+          </div>
+          <div class="qty" id="qty" aria-label="Cantidad a comprar">
+            <button type="button" data-q="1" class="on" id="q1">×1</button>
+            <button type="button" data-q="10" id="q10">×10</button>
+            <button type="button" data-q="max" id="qmax">Máx</button>
+          </div>
+        </div>
+        <div class="list" id="crewList" role="tabpanel" aria-labelledby="tabCrew"></div>
+        <div class="list" id="upList" role="tabpanel" aria-labelledby="tabUp" hidden></div>
+      </div>
+    </aside>
+    <div class="full-warn" id="fullWarn" hidden><span data-icon="alert"></span> Almacén lleno: vende o amplía la caja fuerte</div>
+    <div class="rail" id="rail" aria-label="Mapa de la mina">
+      <button type="button" class="rail-btn" id="railUp" aria-label="Subir a la superficie">▲</button>
+      <canvas id="railMap" role="img" aria-label="Mapa de la mina: toca para ir a esa profundidad"></canvas>
+      <button type="button" class="rail-btn rail-down" id="railDown" aria-label="Bajar al frente"><span id="railDepth">2 m</span><span>▼</span></button>
+    </div>
+  </section>
+
+  <!-- ================= MUSEO ================= -->
+  <section class="sec win-wrap" id="sec-museo" hidden>
+    <div class="win win-sand">
+      <header class="win-head"><span class="win-ico" data-icon="museum"></span><h2>Museo de hallazgos</h2><span class="win-meta" id="muMeta">—</span><button type="button" class="win-x" data-go="mina" aria-label="Cerrar">×</button></header>
+      <div class="win-body">
+        <div class="mu-grid">
+          <div class="mu-main">
+            <div class="mu-tabs" id="muTabs" role="tablist" aria-label="Estratos"></div>
+            <div class="mu-items" id="muItems"></div>
+            <p class="fine">Los hallazgos se quedan en el museo aunque vendas la compañía. Cada uno suma un 0,5 % a tu producción. Algunos solo aparecen de noche.</p>
+          </div>
+          <aside class="mu-side">
+            <div class="mu-detail" id="muDetail"></div>
+            <h3 class="sub-h">Colecciones</h3>
+            <div class="mu-sets" id="muSets"></div>
+            <h3 class="sub-h">Secretos</h3>
+            <div class="mu-secrets" id="muSecrets"></div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MERCADO ================= -->
+  <section class="sec win-wrap" id="sec-mercado" hidden>
+    <div class="win win-blue">
+      <header class="win-head"><span class="win-ico" data-icon="chart"></span><h2>Mercado de metales</h2><button type="button" class="win-x" data-go="mina" aria-label="Cerrar">×</button></header>
+      <div class="win-body">
+        <div class="toolbar">
+          <div class="seg metal" id="mktSeg" aria-label="Metal"></div>
+          <span class="pill-tag" id="regime" hidden>—</span>
+        </div>
+        <div class="mk-grid">
+          <div class="mk-chart">
+            <div class="monitor">
+              <div class="chart-bar">
+                <div class="seg dark" id="tfSeg" aria-label="Periodo del gráfico">
+                  <button type="button" data-tf="tick" class="on" id="tfTick">3 min</button>
+                  <button type="button" data-tf="candle" id="tfCandle">30 min · velas</button>
+                </div>
+                <div class="inds">
+                  <button type="button" class="ind" data-k="sma" id="indSma" hidden><i></i>Media 20</button>
+                  <button type="button" class="ind" data-k="boll" id="indBoll" hidden><i></i>Bollinger</button>
+                  <button type="button" class="ind" data-k="rsi" id="indRsi" hidden><i></i>RSI 14</button>
+                </div>
+              </div>
+              <div class="chart-wrap" id="chartWrap"><canvas id="chart" role="img" aria-label="Gráfico de precio"></canvas><div class="tip" id="tip" hidden></div></div>
+              <div class="chart-legend"><span id="tfLabel">Cada punto es 1 segundo</span><span id="hiLo">—</span><span class="pill-tag" id="signal" hidden>—</span></div>
+            </div>
+            <div class="ticker" id="ticker">Mercado abierto. Pica, guarda el metal y véndelo cuando el precio te convenga.</div>
+            <div class="note-grid">
+              <div class="note">
+                <div class="note-top"><span>Próximo dato: <b id="evName">—</b></span><span class="cd" id="evCd">—</span></div>
+                <span class="hint" id="evHint">Los datos económicos mueven mucho el precio justo al publicarse.</span>
+              </div>
+              <div class="note">
+                <div class="note-top"><span>Rival: <b>Minas del Cierzo</b></span><span class="cd" id="rivCd">—</span></div>
+                <div class="bar" id="rivBarWrap"><i id="rivBar"></i></div>
+                <span class="hint" id="rivHint">Acumula oro y de vez en cuando lo suelta todo de golpe, hundiendo el precio.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mk-desk">
+            <div class="desk-tabs" role="tablist" id="deskTabs">
+              <button type="button" role="tab" data-desk="sell" id="dtSell" aria-selected="true">Vender</button>
+              <button type="button" role="tab" data-desk="trade" id="dtTrade" aria-selected="false">Trading<span class="badge" id="bTrade" hidden>0</span></button>
+              <button type="button" role="tab" data-desk="con" id="dtCon" aria-selected="false">Contratos<span class="badge" id="bCon" hidden>0</span></button>
+              <button type="button" role="tab" data-desk="ord" id="dtOrd" aria-selected="false">Órdenes<span class="badge" id="bOrd" hidden>0</span></button>
+              <button type="button" role="tab" data-desk="log" id="dtLog" aria-selected="false">Historial</button>
+            </div>
+
+            <div class="desk-panel" id="pSell" role="tabpanel">
+              <p class="info" id="stockInfo">—</p>
+              <p class="info">Precio de venta: <b id="physPrice">—</b> <span id="feeInfo"></span></p>
+              <div class="sell-row">
+                <button class="btn btn-gold sell" type="button" data-frac="0.1" id="sell10"><span>Vender 10 %</span><span class="s-sub" id="est10">—</span></button>
+                <button class="btn btn-gold sell" type="button" data-frac="0.5" id="sell50"><span>Vender 50 %</span><span class="s-sub" id="est50">—</span></button>
+                <button class="btn btn-gold sell" type="button" data-frac="1" id="sell100"><span>Vender todo</span><span class="s-sub" id="est100">—</span></button>
+              </div>
+              <p class="info" id="impactTxt">—</p>
+              <div class="vault">
+                <span class="vault-ico" data-icon="safe"></span>
+                <div><span class="v-name">Caja fuerte · nivel <span id="capLvl">1</span></span><span class="v-desc" id="capDesc">—</span></div>
+                <button class="btn btn-green" type="button" id="btnCap">Ampliar</button>
+              </div>
+            </div>
+
+            <div class="desk-panel" id="pTrade" role="tabpanel" hidden>
+              <p class="locked" id="trLocked">Compra la mejora <b>Cuenta en un bróker</b> (pestaña Mejoras de la tienda de la mina) para operar en largo y en corto con apalancamiento, sin tocar tu almacén.</p>
+              <div class="desk-panel" id="trBody">
+                <div class="sum-grid">
+                  <div><span class="lbl">Margen en uso</span><span class="val" id="trMargin">0 €</span></div>
+                  <div><span class="lbl">Resultado abierto</span><span class="val" id="trOpen">0 €</span></div>
+                  <div><span class="lbl">Resultado cerrado</span><span class="val" id="trReal">0 €</span></div>
+                </div>
+                <div class="quote-row"><span>Venta (bid) <b id="bid">—</b></span><span>Compra (ask) <b id="ask">—</b></span><span id="spreadTxt">Diferencial 0,4 %</span></div>
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="tMargin">Inversión (margen, €)</label>
+                    <input id="tMargin" type="number" min="0" step="any" inputmode="decimal" placeholder="0">
+                    <div class="presets" id="tPresets"><button type="button" data-pct="0.1">10 %</button><button type="button" data-pct="0.25">25 %</button><button type="button" data-pct="0.5">50 %</button><button type="button" data-pct="1">Todo</button></div>
+                  </div>
+                  <div class="field">
+                    <span class="flabel">Apalancamiento</span>
+                    <div class="seg" id="levSeg"><button type="button" data-lev="1" id="lev1">1:1</button><button type="button" data-lev="5" id="lev5" class="on">1:5</button><button type="button" data-lev="20" id="lev20">1:20</button><button type="button" data-lev="50" id="lev50">1:50</button></div>
+                  </div>
+                  <div class="field"><label for="tSL" id="tSLl">Stop loss (opcional)</label><input id="tSL" type="number" step="any" inputmode="decimal"></div>
+                  <div class="field"><label for="tTP" id="tTPl">Take profit (opcional)</label><input id="tTP" type="number" step="any" inputmode="decimal"></div>
+                </div>
+                <p class="preview" id="trPreview">—</p>
+                <p class="form-err" id="trErr" hidden></p>
+                <div class="two"><button class="btn btn-green" type="button" id="btnLong">Comprar · largo</button><button class="btn btn-red" type="button" id="btnShort">Vender · corto</button></div>
+                <h3 class="sub-h">Posiciones abiertas</h3>
+                <div class="items" id="posList"></div>
+                <p class="fine">Largo gana si el precio sube; corto gana si baja. Con apalancamiento las pérdidas también se multiplican: si una posición pierde todo su margen, se cierra sola.</p>
+              </div>
+            </div>
+
+            <div class="desk-panel" id="pCon" role="tabpanel" hidden>
+              <p class="locked" id="conLocked">Los clientes empiezan a llamar en el <b>nivel 3</b>.</p>
+              <div class="desk-panel" id="conBody">
+                <div class="rep"><span>Reputación</span><span class="stars" id="stars">☆☆☆☆☆</span><span class="meta" id="repTxt">0 de 5</span></div>
+                <p class="info">Los clientes pagan por encima del spot a cambio de un plazo. Si no entregas a tiempo, pagas la penalización y pierdes reputación.</p>
+                <h3 class="sub-h">Ofertas</h3>
+                <div class="items" id="offList"></div>
+                <h3 class="sub-h">En curso</h3>
+                <div class="items" id="conList"></div>
+              </div>
+            </div>
+
+            <div class="desk-panel" id="pOrd" role="tabpanel" hidden>
+              <p class="locked" id="orLocked">Contrata un <b>Agente de ventas</b> (Mejoras de la tienda de la mina) para dejar órdenes que vendan solas cuando el precio llegue a donde quieres.</p>
+              <div class="desk-panel" id="orBody">
+                <div class="form-grid">
+                  <div class="field"><label for="oKind">Condición</label><select id="oKind"><option value="above">Vender si sube a…</option><option value="below">Vender si baja a…</option></select></div>
+                  <div class="field"><label for="oPrice" id="oPriceL">Precio</label><input id="oPrice" type="number" step="any" inputmode="decimal"></div>
+                  <div class="field"><label for="oFrac">Cantidad</label><select id="oFrac"><option value="0.25">25 % del almacén</option><option value="0.5">50 % del almacén</option><option value="1" selected>Todo el almacén</option></select></div>
+                  <div class="field end"><button class="btn btn-green" type="button" id="btnOrder">Crear orden</button></div>
+                </div>
+                <p class="form-err" id="orErr" hidden></p>
+                <div class="items" id="ordList"></div>
+                <label class="check"><input type="checkbox" id="autoSell"> Vender el 50 % automáticamente cada vez que un almacén se llene</label>
+              </div>
+            </div>
+
+            <div class="desk-panel" id="pLog" role="tabpanel" hidden>
+              <ul class="log" id="logList"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FINANZAS ================= -->
+  <section class="sec win-wrap" id="sec-finanzas" hidden>
+    <div class="win win-green">
+      <header class="win-head"><span class="win-ico" data-icon="bank"></span><h2>Finanzas</h2><button type="button" class="win-x" data-go="mina" aria-label="Cerrar">×</button></header>
+      <div class="win-body">
+        <div class="fin-grid">
+          <div class="panel">
+            <div class="panel-head"><h3>Cuentas</h3><span class="meta">Estimación con los precios de ahora</span></div>
+            <div class="sum-grid four">
+              <div><span class="lbl">Beneficio</span><span class="val" id="fNet">—</span></div>
+              <div><span class="lbl">Ingresos</span><span class="val" id="fInc">—</span></div>
+              <div><span class="lbl">Gastos</span><span class="val" id="fExp">—</span></div>
+              <div><span class="lbl">Deuda</span><span class="val" id="fDebt">—</span></div>
+            </div>
+            <div class="monitor"><div class="chart-wrap short"><canvas id="finChart" role="img" aria-label="Beneficio neto por minuto"></canvas></div></div>
+            <span class="meta">Beneficio neto real de cada minuto (últimos 30)</span>
+            <h3 class="sub-h" id="plTitle">Cuenta de resultados · último minuto</h3>
+            <table class="pl" id="plTable"></table>
+          </div>
+          <div class="fin-side">
+            <div class="panel">
+              <div class="panel-head"><h3>Recursos</h3><span class="pill-tag" id="dayPill">—</span></div>
+              <div class="res-list" id="resList"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><h3>Personal y maquinaria</h3></div>
+              <div class="res-card">
+                <div class="res-top"><b>Moral de la plantilla</b><span class="meta" id="moralTxt">100 %</span></div>
+                <div class="bar" id="moralBarW"><i id="moralBar"></i></div>
+                <span class="info" id="payInfo">—</span>
+                <label class="check"><input type="checkbox" data-chk="autoPay" id="chkAutoPay"> Si el día de paga no llega la caja, vender metal para pagar</label>
+                <div class="acts"><button type="button" class="btn sm btn-green" data-act="payArrears" id="btnArrears" hidden>Pagar atrasos</button></div>
+              </div>
+              <div class="res-card">
+                <div class="res-top"><b>Estado de la maquinaria</b><span class="meta" id="maintTxt">100 %</span></div>
+                <div class="bar" id="maintBarW"><i id="maintBar"></i></div>
+                <span class="info" id="maintInfo">—</span>
+                <label class="check"><input type="checkbox" data-chk="maintAuto" id="chkMaint"> Contrato de mantenimiento: repara solo, un 20 % más caro</label>
+                <div class="acts"><button type="button" class="btn sm btn-blue" data-act="repair" id="btnRepair">Reparar</button></div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><h3>Banco e impuestos</h3></div>
+              <p class="locked" id="loanLocked">—</p>
+              <div class="res-card" id="loanBody">
+                <div class="res-top"><b>Préstamo</b><span class="meta">0,5 % de interés por minuto</span></div>
+                <div class="bar"><i id="loanBar"></i></div>
+                <span class="info" id="loanInfo">—</span>
+                <div class="acts">
+                  <button type="button" class="btn sm btn-blue" data-act="borrow" data-frac="0.25" id="bor25">Pedir 25 %</button>
+                  <button type="button" class="btn sm btn-blue" data-act="borrow" data-frac="0.5" id="bor50">Pedir 50 %</button>
+                  <button type="button" class="btn sm btn-blue" data-act="borrow" data-frac="1" id="bor100">Pedir todo</button>
+                  <button type="button" class="btn sm btn-green" data-act="repay" data-frac="0.5" id="rep50">Devolver 50 %</button>
+                  <button type="button" class="btn sm btn-green" data-act="repay" data-frac="1" id="rep100">Devolver todo</button>
+                </div>
+              </div>
+              <p class="locked" id="taxLocked">—</p>
+              <div class="res-card" id="taxBody">
+                <div class="res-top"><b>Impuestos</b><span class="meta" id="taxRateTxt">10 %</span></div>
+                <span class="info" id="taxInfo">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= EMPRESAS ================= -->
+  <section class="sec win-wrap" id="sec-empresas" hidden>
+    <div class="win win-orange">
+      <header class="win-head"><span class="win-ico" data-icon="factory"></span><h2>Tus empresas</h2><span class="win-meta" id="bizSum">—</span><button type="button" class="win-x" data-go="mina" aria-label="Cerrar">×</button></header>
+      <div class="win-body">
+        <p class="locked big-lock" id="bizLocked">—</p>
+        <div id="bizBody" class="desk-panel">
+          <div class="ticker" id="bizTicker">Invierte lo que gana la mina en negocios que trabajen solos. Un gerente duplica lo que produce cada empresa.</div>
+          <div class="biz-grid" id="bizGrid"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= BOLSA ================= -->
+  <section class="sec win-wrap" id="sec-bolsa" hidden>
+    <div class="win win-cyan">
+      <header class="win-head"><span class="win-ico" data-icon="bull"></span><h2>Bolsa</h2><span class="win-meta">Comisión <span id="stComm">0,2 %</span> · dividendos cada minuto</span><button type="button" class="win-x" data-go="mina" aria-label="Cerrar">×</button></header>
+      <div class="win-body">
+        <p class="locked big-lock" id="stLocked">—</p>
+        <div id="stBody" class="desk-panel">
+          <div class="sum-grid">
+            <div><span class="lbl">Valor de la cartera</span><span class="val" id="pfVal">0 €</span></div>
+            <div><span class="lbl">Resultado abierto</span><span class="val" id="pfPnl">—</span></div>
+            <div><span class="lbl">Dividendos cobrados</span><span class="val" id="pfDiv">0 €</span></div>
+          </div>
+          <div class="ticker" id="stTicker">Las acciones de mineras se mueven con su metal; las demás van a su aire.</div>
+          <div class="bolsa-grid">
+            <div class="st-list" id="stList"></div>
+            <div class="st-detail">
+              <div class="st-title"><h3 id="sdName">—</h3><span class="st-big" id="sdPrice">—</span></div>
+              <p class="info" id="sdDesc">—</p>
+              <div class="monitor">
+                <div class="chart-bar">
+                  <div class="seg dark" id="stTf"><button type="button" data-tf="tick" class="on" id="stTfTick">3 min</button><button type="button" data-tf="long" id="stTfLong">30 min</button></div>
+                  <span class="meta" id="sdCh">—</span>
+                </div>
+                <div class="chart-wrap mid" id="stChartWrap"><canvas id="stChart" role="img" aria-label="Gráfico de la acción"></canvas></div>
+              </div>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="sQty">Acciones</label>
+                  <input id="sQty" type="number" min="1" step="1" inputmode="numeric" value="10">
+                  <div class="presets" id="sPresets"><button type="button" data-n="1">1</button><button type="button" data-n="10">10</button><button type="button" data-n="100">100</button><button type="button" data-n="max">Máx</button></div>
+                </div>
+                <div class="field"><span class="flabel">Tu posición</span><p class="preview" id="sdHold">—</p></div>
+              </div>
+              <p class="preview" id="sdCost">—</p>
+              <p class="form-err" id="sErr" hidden></p>
+              <div class="two"><button class="btn btn-green" type="button" id="btnBuyS">Comprar</button><button class="btn btn-red" type="button" id="btnSellS">Vender</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= HABILIDADES ================= -->
+  <section class="sec win-wrap" id="sec-habilidades" hidden>
+    <div class="win win-purple">
+      <header class="win-head"><span class="win-ico" data-icon="star"></span><h2>Árbol de habilidades</h2><button type="button" class="win-x" data-go="mina" aria-label="Cerrar">×</button></header>
+      <div class="win-body">
+        <div class="sp-box"><span class="sp-num" id="spNum">0</span><span class="info" id="spTxt">puntos por gastar. Ganas 1 por nivel y 2 en los niveles múltiplos de 5.</span><div class="confirm" id="respecBox"></div></div>
+        <div class="tree" id="tree"></div>
+        <h3 class="sub-h">Lo que desbloqueas al subir de nivel</h3>
+        <ul class="road" id="road"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= LOGROS ================= -->
+  <section class="sec win-wrap" id="sec-logros" hidden>
+    <div class="win win-red">
+      <header class="win-head"><span class="win-ico" data-icon="trophy"></span><h2>Logros y legado</h2><button type="button" class="win-x" data-go="mina" aria-label="Cerrar">×</button></header>
+      <div class="win-body">
+        <div class="panel">
+          <div class="panel-head"><h3>Vender la compañía</h3><span class="meta" id="legacyMeta">—</span></div>
+          <div class="prest" id="prest"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Tienda de legado</h3><span class="meta" id="shopMeta">—</span></div>
+          <p class="info">Gasta lingotes en ventajas permanentes para esta y las próximas compañías. Cada lingote sin gastar da un +5 % a todo; al gastarlo pierdes ese 5 % a cambio de la ventaja.</p>
+          <div class="ach-grid" id="perkGrid"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Contrarreloj</h3><span class="meta" id="runMeta">—</span></div>
+          <div class="ach-grid" id="timedGrid"></div>
+          <h3 class="sub-h">Tus mejores tiempos (se guardan aunque vendas la compañía)</h3>
+          <ul class="road" id="records"></ul>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Logros</h3><span class="meta" id="achMeta">—</span></div>
+          <div class="ach-grid" id="achGrid"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Estadísticas</h3></div>
+          <dl class="stats">
+            <div><dt>Mineral extraído (eq. oro)</dt><dd id="sMined">0 mg</dd></div>
+            <div><dt>Ingresos de esta compañía</dt><dd id="sEarned">0 €</dd></div>
+            <div><dt>Ingresos de siempre</dt><dd id="sAll">0 €</dd></div>
+            <div><dt>Resultado del trading</dt><dd id="sTrade">—</dd></div>
+            <div><dt>Contratos cumplidos</dt><dd id="sCon">0</dd></div>
+            <div><dt>Golpes de pico</dt><dd id="sClicks">0</dd></div>
+            <div><dt>Compañías vendidas</dt><dd id="sPrest">0</dd></div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+<div id="toasts" aria-live="polite"></div>
+
+<div class="lvup" id="lvup" hidden>
+  <div class="lvup-rays"></div>
+  <div class="lvup-card">
+    <span class="lvup-k">¡Subes de nivel!</span>
+    <b class="lvup-n" id="lvupN">2</b>
+    <span class="lvup-t" id="lvupTxt">+1 punto de habilidad</span>
+  </div>
+</div>
+
+<div class="fcard-wrap" id="fcard" role="dialog" aria-modal="true" aria-labelledby="fcName" hidden>
+  <div class="fcard" id="fcardBox">
+    <div class="fc-rib" id="fcRib">Común</div>
+    <div class="fc-art"><div class="fc-rays"></div><img class="fc-img" id="fcImg" alt=""></div>
+    <div class="fc-body">
+      <h2 id="fcName">—</h2>
+      <span class="fc-where" id="fcWhere">—</span>
+      <p id="fcTxt">—</p>
+      <div class="fc-chips" id="fcChips"></div>
+      <div class="fc-acts"><button type="button" class="btn btn-plain" id="fcMuseo">Al museo</button><button type="button" class="btn btn-green" id="fcOk">¡Genial!</button></div>
+    </div>
+  </div>
+</div>
+<div class="st-banner" id="stBanner" hidden><span class="sb-k">¡Nuevo estrato!</span><b id="sbName">—</b><span id="sbTxt">—</span></div>
+
+<div class="tut" id="tut" role="dialog" aria-labelledby="tutTitle" hidden>
+  <canvas class="tut-face" id="tutFace" width="112" height="112" aria-hidden="true"></canvas>
+  <div class="tut-body">
+    <span class="eyebrow" id="tutEyebrow">Nuevo</span>
+    <h3 id="tutTitle">—</h3>
+    <ol id="tutSteps"></ol>
+    <div class="acts"><button type="button" class="btn sm btn-plain" data-act="tutOk" id="tutOk">Entendido</button><button type="button" class="btn sm btn-green" data-act="tutGo" id="tutGo">Llévame</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="menu" role="dialog" aria-modal="true" aria-labelledby="menuTitle" hidden>
+  <div class="menu-card">
+    <div class="menu-head">
+      <h2 class="logo" id="menuTitle"><span>Veta</span><span>Madre</span></h2>
+      <p class="tagline">De un pico a un imperio</p>
+      <button type="button" class="win-x" data-act="resume" id="btnMenuX" aria-label="Cerrar el menú (Esc)">×</button>
+    </div>
+    <div class="menu-tabs" role="tablist">
+      <button type="button" role="tab" data-mtab="home" id="mtHome" aria-selected="true">Inicio</button>
+      <button type="button" role="tab" data-mtab="set" id="mtSet" aria-selected="false">Ajustes</button>
+      <button type="button" role="tab" data-mtab="help" id="mtHelp" aria-selected="false">Cómo se juega</button>
+    </div>
+
+    <div id="mHome" class="menu-pane">
+      <div class="sum-grid four">
+        <div><span class="lbl">Nivel</span><span class="val" id="mhLevel">—</span></div>
+        <div><span class="lbl">Caja</span><span class="val" id="mhMoney">—</span></div>
+        <div><span class="lbl">Beneficio</span><span class="val" id="mhNet">—</span></div>
+        <div><span class="lbl">Tiempo de compañía</span><span class="val" id="mhTime">—</span></div>
+      </div>
+      <div class="away" id="awayBox" hidden></div>
+      <p class="info" id="mhObj"></p>
+      <button type="button" class="btn btn-green big" data-act="resume" id="btnResume">Reanudar partida</button>
+      <p class="fine">El juego no se detiene mientras miras el menú. Sin ti, tus minas y empresas trabajan como máximo 1 hora, y en ese tiempo apenas ganas experiencia.</p>
+    </div>
+
+    <div id="mSet" class="menu-pane" hidden>
+      <div class="set-grid">
+        <div class="set-col">
+          <h3 class="sub-h">Preferencias</h3>
+          <div class="set-item"><b>Sonido</b><div class="seg" id="setSound"><button type="button" data-v="on">Activado</button><button type="button" data-v="off">Desactivado</button></div></div>
+          <div class="set-item"><b>Animaciones</b><div class="seg" id="setMotion"><button type="button" data-v="full">Completas</button><button type="button" data-v="calm">Reducidas</button></div></div>
+          <div class="set-item"><b>Tutoriales</b><div class="seg" id="setTuts"><button type="button" data-v="on">Activados</button><button type="button" data-v="off">Desactivados</button></div><span>Una tarjeta corta cada vez que desbloqueas algo. <button type="button" class="btn sm btn-plain" data-act="tutReset" id="btnTutReset">Volver a verlos</button></span></div>
+          <div class="set-item"><b>Avisos emergentes</b><div class="seg" id="setToasts"><button type="button" data-v="all">Todos</button><button type="button" data-v="imp">Importantes</button><button type="button" data-v="none">Ninguno</button></div><span>«Importantes» deja solo niveles, logros y problemas.</span></div>
+        </div>
+        <div class="set-col">
+          <h3 class="sub-h">Partida</h3>
+          <div class="set-item"><b>Ingresos en inactivo</b><span>Al volver cuenta hasta 1 hora de trabajo. Lo demás se pierde.</span></div>
+          <details class="set-item"><summary><b>Copia de seguridad</b></summary>
+            <span class="info">Genera un código para guardar tu partida o llevarla a otro navegador. Pega un código y pulsa «Cargar» para recuperarla.</span>
+            <textarea class="code" id="saveCode" spellcheck="false" aria-label="Código de la partida" placeholder="Aquí aparece el código, o pega uno para cargarlo"></textarea>
+            <div class="acts"><button type="button" class="btn sm btn-blue" data-act="exportSave" id="btnExport">Generar y copiar</button><span class="confirm" id="importBox"></span></div>
+            <p class="form-err" id="importErr" hidden></p>
+          </details>
+          <div class="set-item"><b>Borrar partida</b><span>Se pierde todo, también logros y legado.</span><div class="confirm" id="resetBox"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="mHelp" class="menu-pane guide" hidden>
+      <div><h3>Lo básico</h3>
+        <ul><li><b>Pica</b> la roca y contrata <b>equipo</b> para que extraiga solo. Sigue los <b>objetivos</b> si no sabes por dónde seguir.</li>
+        <li>El metal va al <b>almacén</b>; si se llena, la mina para. Vende cuando el precio esté alto, y mejor por partes.</li></ul></div>
+      <div><h3>Crecer</h3>
+        <ul><li>La <b>experiencia</b> sale sobre todo de lo que haces tú: picar, vender a mano, contratos, trading e invertir. Lo pasivo da muy poca.</li>
+        <li>Cada nivel da puntos de <b>habilidad</b> y desbloquea cosas nuevas.</li></ul></div>
+      <div><h3>El dinero</h3>
+        <ul><li>Pagas <b>nóminas</b> cada minuto; sin caja baja la moral y puede haber huelga.</li>
+        <li>Las máquinas gastan <b>energía</b>, <b>combustible</b> y <b>explosivos</b>. Puedes comprarlos o <b>producirlos</b>: paneles, aerogeneradores, planta de biodiésel y fábrica de explosivos.</li></ul></div>
+      <div><h3>El mercado</h3>
+        <ul><li>Los precios se mueven con noticias, datos económicos y la mina rival.</li>
+        <li><b>Contratos</b> pagan más; <b>órdenes</b> venden solas; el <b>trading</b> multiplica ganancias y pérdidas.</li></ul></div>
+      <div><h3>El imperio</h3>
+        <ul><li><b>Empresas</b> que trabajan solas y <b>bolsa</b> para invertir o sacar tus empresas a cotizar.</li>
+        <li>En el nivel 20 puedes <b>vender la compañía</b>: ganas lingotes para la <b>tienda de legado</b>.</li></ul></div>
+      <div><h3>Atajos</h3>
+        <ul><li><b>Espacio</b> pica · <b>Esc</b> abre este menú · <b>1–8</b> cambian de sección · <b>flechas</b> suben y bajan por la mina.</li>
+        <li>Si el beneficio sale en rojo, mira Finanzas: casi siempre es un almacén lleno o falta de energía.</li></ul></div>
+    </div>
+  </div>
+</div>
+<!--APP-END-->
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

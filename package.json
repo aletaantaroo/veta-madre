@@ -1,0 +1,18 @@
+{
+  "name": "veta-madre",
+  "version": "9.0.0",
+  "private": true,
+  "description": "Tycoon minero en el navegador: pica oro, plata y cobre, especula en el mercado, monta empresas y cotiza en bolsa.",
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "build": "node tools/build.mjs",
+    "imports": "node tools/imports.mjs"
+  },
+  "devDependencies": {
+    "acorn": "^8.12.0",
+    "acorn-walk": "^8.3.0",
+    "esbuild": "^0.24.0",
+    "magic-string": "^0.30.0"
+  }
+}
