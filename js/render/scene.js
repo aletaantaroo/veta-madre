@@ -3,7 +3,7 @@ import { $, dpr, refreshDpr, setT } from '../core/dom.js';
 import { clamp, money, mulberry32, nf0, weight } from '../core/format.js';
 import { RM } from '../core/settings.js';
 import { BIZ, CREW, DAY_LEN, FINDS, GAL_DEPTH, METALS, MK, RARITY, STRATA } from '../data/content.js';
-import { needs } from '../game/economy.js';
+import { gameMin, needs } from '../game/economy.js';
 import { collectFind, patTopo, secret, visibleFinds } from '../game/finds.js';
 import { collectNugget, dig, nugget } from '../game/mining.js';
 import { openVein } from '../game/shop.js';
@@ -455,23 +455,140 @@ function drawGallery(m, t){
 function drawCage(t){
   const {u, gy, shaftX} = L, G = L.gal[S.vein], D = Math.max(40*u, G.y - gy - 30*u);
   const per = 2*(D/(260*u) + 1.4), ph = (t % per)/per, pp = ph < .5 ? ph*2 : 2 - ph*2, e = pp < .5 ? 2*pp*pp : 1 - Math.pow(-2*pp + 2, 2)/2;
-  const cy = gy + 26*u + (D - 4*u)*e;
-  g.strokeStyle = '#2a1a0e'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(shaftX, gy - 92*u); g.lineTo(shaftX, cy - 22*u); g.stroke();
-  cage(g, shaftX, cy, .95*u, ph < .5 ? null : MCOL[S.vein].ore);
+  const cy = gy + 26*u + (D - 4*u)*e, cx = shaftX - 7*u;
+  g.strokeStyle = '#2a1a0e'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(cx, gy - 92*u); g.lineTo(cx, cy - 22*u); g.stroke();
+  cage(g, cx, cy, .82*u, ph < .5 ? null : MCOL[S.vein].ore);
+}
+/* Cubo de extracción: sube el mineral desde el frente hasta la superficie (se ve lo hondo que está la mina). */
+function drawSkip(t, v0, v1){
+  const {u, gy, shaftX, frenteY} = L, top = gy + 18*u, D = frenteY - 20*u - top; if (D < 60*u || !(S.owned.pico || S.owned.perfo || S.owned.tbm)) return;
+  const per = 2*(D/(340*u) + .8), ph = (t % per)/per, pp = ph < .5 ? ph*2 : 2 - ph*2, e = pp < .5 ? 2*pp*pp : 1 - Math.pow(-2*pp + 2, 2)/2;
+  const y = top + D*(1 - e), x = shaftX + 11*u;   // arriba cargado, abajo vacío
+  g.strokeStyle = 'rgba(42,26,14,.8)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x, Math.max(v0 - 10, gy - 80*u)); g.lineTo(x, y - 14*u); g.stroke();
+  if (y < v0 - 30 || y > v1 + 30) return;
+  g.save(); g.translate(x, y); g.lineWidth = 1.6; g.strokeStyle = '#2a1a0e';
+  g.fillStyle = '#7c848f'; g.beginPath(); g.moveTo(-7*u, -14*u); g.lineTo(7*u, -14*u); g.lineTo(5*u, 0); g.lineTo(-5*u, 0); g.closePath(); g.fill(); g.stroke();
+  if (ph >= .5 || ph < .02){ g.fillStyle = MCOL[S.vein].ore; g.beginPath(); g.moveTo(-6*u, -14*u); g.quadraticCurveTo(0, -21*u, 6*u, -14*u); g.closePath(); g.fill(); g.stroke(); }
+  g.restore();
 }
 function drawFrente(t, v0, v1){
-  const {u, shaftX, frenteY} = L; if (frenteY < v0 - 80 || frenteY > v1 + 80) return;
-  const x = shaftX, y = frenteY, j = Math.sin(t*50)*.8*u;
+  const {u, shaftX, frenteY} = L; if (frenteY < v0 - 120 || frenteY > v1 + 120) return;
+  const x = shaftX, y = frenteY, j = Math.sin(t*50)*.8*u, crew = (S.owned.pico || 0) > 0;
+  // cámara de trabajo al fondo del pozo: se hunde con la mina y lleva a tu gente y tu mejor máquina
+  if (crew){
+    const w0 = x - 70*u, w1 = x + 96*u, top = y - 44*u;
+    g.fillStyle = '#24160c'; g.beginPath(); g.roundRect(w0, top, w1 - w0, 58*u, 14*u); g.fill();
+    g.strokeStyle = '#2a1a0e'; g.lineWidth = 2.5; g.stroke();
+    const gl = g.createRadialGradient(x + 10*u, y - 30*u, 0, x + 10*u, y - 30*u, 90*u); gl.addColorStop(0, 'rgba(255,190,90,.28)'); gl.addColorStop(1, 'rgba(255,190,90,0)'); g.fillStyle = gl; g.fillRect(w0, top, w1 - w0, 58*u);
+    g.fillStyle = '#ffe9a8'; g.beginPath(); g.arc(x + 20*u, top + 8*u, 3.2*u, 0, 6.2832); g.fill(); g.strokeStyle = '#2a1a0e'; g.lineWidth = 1.2; g.stroke();
+    const idle = S.moral <= 0, noE = fac.e < .5, tm = noE ? 0 : t, su = .85*u;
+    const nm = Math.min(3, vis(S.owned.pico || 0, 3));
+    for (let i = 0; i < nm; i++) miner(g, x - 30*u - i*16*u, y + 10*u, su, {pose: idle ? 'idle' : 'swing', t, speed: 5 + i, seed: i*7 + 40});
+    const best = (S.owned.tbm || 0) ? 'tbm' : (S.owned.excav || 0) ? 'excav' : (S.owned.voladura || 0) ? 'voladura' : (S.owned.perfo || 0) ? 'perfo' : null;
+    if (best === 'tbm') tbm(g, x + 62*u, y + 11*u, .62*u, tm);
+    else if (best === 'excav') excavator(g, x + 58*u, y + 11*u, .62*u, tm, 3);
+    else if (best === 'perfo') drill(g, x + 52*u, y + 11*u, .75*u, tm);
+    else if (best === 'voladura') miner(g, x + 50*u, y + 10*u, su, {pose: idle ? 'idle' : 'dyn', t, seed: 9});
+    if (best && tm && !RM && Math.random() < .2) parts.push({k: 'dust', x: x + 70*u, y: y - 4*u, vx: 14, vy: -10, life: .9, max: .9, s: 5*u, col: 'rgba(210,190,160,'});
+  }
   g.save(); g.translate(x, y); g.lineWidth = 2.2; g.strokeStyle = '#2a1a0e';
   g.fillStyle = '#ffc62e'; g.beginPath(); g.roundRect(-16*u + j, -30*u, 32*u, 20*u, 5*u); g.fill(); g.stroke();
   g.fillStyle = '#8fd3ff'; g.beginPath(); g.roundRect(-10*u + j, -26*u, 10*u, 8*u, 2*u); g.fill(); g.stroke();
   g.fillStyle = '#7c848f'; g.fillRect(-4*u, -10*u, 8*u, 8*u); g.strokeRect(-4*u, -10*u, 8*u, 8*u);
-  g.save(); g.translate(0, 0); g.fillStyle = '#dfe7ef'; g.beginPath(); g.moveTo(-6*u, -2*u); g.lineTo(6*u, -2*u); g.lineTo(0, 14*u); g.closePath(); g.fill(); g.stroke();
+  g.fillStyle = '#dfe7ef'; g.beginPath(); g.moveTo(-6*u, -2*u); g.lineTo(6*u, -2*u); g.lineTo(0, 14*u); g.closePath(); g.fill(); g.stroke();
   g.strokeStyle = '#8b96a3'; g.lineWidth = 1; const off = (t*20) % 4; for (let k = 0; k < 3; k++){ const yy = -1*u + (k*4 + off)*u; if (yy > 12*u) continue; const hw = 6*u*(1 - (yy + 2*u)/(16*u)); g.beginPath(); g.moveTo(-hw, yy); g.lineTo(hw, yy + 2*u); g.stroke(); }
   g.restore();
-  g.restore();
   if (!RM && Math.random() < .5){ parts.push({k: 'chip', x: x + (Math.random() - .5)*10*u, y: y + 12*u, vx: (Math.random() - .5)*140, vy: -40 - Math.random()*80, life: .5, max: .5, s: 2*u, col: Math.random() < .5 ? '#ffd84a' : TEX[Math.max(0, stratumIdx())].lo, r: 0}); }
-  plate(g, x - 76*u, y - 18*u, `Frente · ${nf0.format(frenteDepth())} m`, '#ff5b4f', '#ffffff', u*.9);
+  const px = x - (crew ? 110 : 76)*u, tight = px - 62*u < L.lx0 + 4;
+  plate(g, tight ? x + (crew ? 14 : 0)*u : px, tight ? y - (crew ? 58 : 44)*u : y - 18*u, `Frente · ${nf0.format(frenteDepth())} m`, '#ff5b4f', '#ffffff', u*.9);
+}
+/* Tajos: pequeños frentes de trabajo en cada estrato ya atravesado (a la izquierda del pozo). */
+const SITE_D = [40, 100, 300, 700, 1000, 1500, 2200, 3000, 4000, 5500, 7000, 8500];
+function drawSites(t, v0, v1){
+  const {u, shaftX} = L, fd = frenteDepth(), n = S.owned.pico || 0; if (!n) return;
+  const busy = MK.filter(m => S.opened[m]).map(m => GAL_DEPTH[m]);
+  const maxSites = Math.min(SITE_D.length, 1 + Math.floor(Math.log2(n + 1)));   // más mineros, más tajos abiertos
+  let shown = 0;
+  SITE_D.forEach((d, i) => {
+    if (d > fd - 30 || shown >= maxSites || busy.some(b => Math.abs(b - d) < 45)) return;
+    const y = depthY(d) + 30*u; if (Math.abs(y - L.frenteY) < 110*u) return;
+    shown++;
+    if (y < v0 - 60 || y > v1 + 60) return;
+    const si = Math.max(0, STRATA.findIndex(st => d < st.to));
+    const x1 = shaftX - 19*u, x0 = Math.max(L.lx0 + 4*u, x1 - 96*u), top = y - 40*u; if (x1 - x0 < 60*u) return;
+    g.fillStyle = '#24160c'; g.beginPath(); g.roundRect(x0, top, x1 - x0 + 4*u, 46*u, [14*u, 0, 0, 14*u]); g.fill();
+    g.strokeStyle = '#2a1a0e'; g.lineWidth = 2.2; g.stroke();
+    g.fillStyle = '#6b4a2e'; g.fillRect(x0 + 6*u, y - 3*u, x1 - x0 - 6*u, 7*u);
+    const gl = g.createRadialGradient(x0 + 50*u, top + 10*u, 0, x0 + 50*u, top + 10*u, 50*u); gl.addColorStop(0, 'rgba(255,190,90,.25)'); gl.addColorStop(1, 'rgba(255,190,90,0)'); g.fillStyle = gl; g.fillRect(x0, top, x1 - x0, 46*u);
+    const idle = S.moral <= 0;
+    miner(g, x0 + 22*u, y, .82*u, {pose: idle ? 'idle' : 'swing', t, speed: 4 + (i % 3), seed: i*13 + 5, dir: -1});
+    if (n >= 10 && (S.owned.vagoneta || 0) > 0){ const p = .5 - .5*Math.cos(t*.5 + i), cx = x0 + 40*u + p*36*u; cart(g, cx, y - 1*u, .75*u, TEX[si].hi, p > .5 ? 1 : .2); }
+    if (!idle && Math.sin(t*(4 + (i % 3)) + i*13 + 5) > .985) chipsAt(x0 + 8*u, y - 12*u, 2, S.vein);
+    plate(g, (x0 + x1)/2, top - 8*u, `Tajo · ${nf0.format(d)} m`, '#fff5de', '#2a1a0e', u*.7);
+  });
+}
+/* ---------- gente y máquinas bajando por el pozo ---------- */
+const CREW_LAB = {batea: 'buscador', pico: 'minero', vagoneta: 'vagoneta', perfo: 'perforadora', voladura: 'artificiero', excav: 'excavadora', tbm: 'tuneladora'};
+let travelers = [], lastHour = null, shiftPlate = 0;
+function destOf(id){
+  if (id === 'perfo' || id === 'tbm') return {y: L.frenteY + 10*L.u, x: L.shaftX + 44*L.u};
+  const G = L.gal[S.vein]; return {y: G.y, x: G.x0 + 50*L.u};
+}
+function spawnTraveler(id, n, dir, delay, quiet){
+  if (!L || !CREW_LAB[id] || travelers.length > 16) return;
+  travelers.push({id, n, dir, t: -delay, dest: destOf(id), seed: (Math.random()*99)|0, quiet, rx: Math.random()});
+}
+function travelerPos(v){
+  const {u, gy, shaftX} = L, d = v.dest, ride = Math.min(5, Math.max(1.1, Math.abs(d.y - gy)/(330*u)));
+  const walk1 = .9, walk2 = .9, total = walk1 + ride + walk2;
+  if (v.id === 'batea'){
+    const rx0 = L.lx0 + 26*u, rx1 = shaftX - 50*u, tx = rx0 + 16*u + Math.max(0, rx1 - rx0 - 32*u)*v.rx, k = Math.min(1, v.t/1.6);
+    return {x: shaftX - 20*u + (tx - shaftX + 20*u)*k, y: gy + 2*u, pose: k < 1 ? 'walk' : 'pan', face: -1, a: v.t < 1.6 ? 1 : Math.max(0, 1 - (v.t - 1.6)*2), done: v.t > 2.2, riding: false};
+  }
+  let tt = v.t;
+  if (v.dir === 'up') tt = total - v.t;   // subir es lo mismo al revés
+  let x, y, pose = 'walk', riding = false, a = 1, face = 1;
+  if (tt < walk1){ const k = tt/walk1; x = shaftX - 80*u + 73*u*k; y = gy + 2*u; }
+  else if (tt < walk1 + ride){ const k = (tt - walk1)/ride, e = k < .5 ? 2*k*k : 1 - Math.pow(-2*k + 2, 2)/2; x = shaftX - 7*u; y = gy + 22*u + (d.y - gy - 22*u)*e; pose = 'idle'; riding = true; }
+  else { const k = Math.min(1, (tt - walk1 - ride)/walk2); x = shaftX - 7*u + (d.x - shaftX + 7*u)*k; y = d.y; }
+  if (v.dir === 'up'){ face = -1; if (v.t > total - .35) a = Math.max(0, (total - v.t)/.35); if (v.t < .3) a = v.t/.3; }
+  else if (tt > total - .35) a = Math.max(0, (total - tt)/.35);
+  return {x, y, pose, riding, a, face, done: v.t > total};
+}
+function drawTravelers(dt, t, v0, v1){
+  if (!travelers.length) return;
+  const {u, gy} = L;
+  travelers.forEach(v => { v.t += dt; });
+  travelers = travelers.filter(v => {
+    if (v.t < 0) return true;
+    const p = travelerPos(v); if (p.done) return false;
+    if (p.y < v0 - 80 || p.y > v1 + 80) return true;
+    g.save(); g.globalAlpha = Math.max(0, Math.min(1, p.a));
+    if (p.riding){
+      g.strokeStyle = '#2a1a0e'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(p.x, Math.max(v0 - 10, gy - 80*u)); g.lineTo(p.x, p.y - 34*u); g.stroke();
+      g.fillStyle = '#7c848f'; g.strokeStyle = '#2a1a0e'; g.lineWidth = 1.6; g.beginPath(); g.rect(p.x - 13*u, p.y, 26*u, 4*u); g.fill(); g.stroke();
+      g.beginPath(); g.moveTo(p.x - 12*u, p.y); g.lineTo(p.x, p.y - 34*u); g.lineTo(p.x + 12*u, p.y); g.stroke();
+    }
+    const id = v.id, s1 = .8*u;
+    if (id === 'vagoneta') cart(g, p.x, p.y - 1*u, .8*u, MCOL[S.vein].ore, .2);
+    else if (id === 'perfo') drill(g, p.x, p.y + 1*u, .62*u, p.riding ? 0 : t);
+    else if (id === 'excav') excavator(g, p.x, p.y + 1*u, .5*u, p.riding ? 0 : t, 2);
+    else if (id === 'tbm') tbm(g, p.x, p.y + 1*u, .45*u, p.riding ? 0 : t);
+    else miner(g, p.x, p.y, s1, {pose: p.pose, t, seed: v.seed, dir: p.face, suit: v.dir === 'up' ? '#8d8490' : undefined});
+    g.restore();
+    if (!v.quiet && (p.riding || v.id === 'batea') && v.t < 3.5){ plate(g, p.x + 44*u, p.y - 30*u, `+${v.n} ${CREW_LAB[id]}${v.n > 1 ? (/[aeiou]$/.test(CREW_LAB[id]) ? 's' : 'es') : ''}`, '#3fcf6c', '#ffffff', u*.75); }
+    return true;
+  });
+}
+/* Cambio de turno a las 06:00, 14:00 y 22:00: baja un grupo y sube el que termina. */
+function shiftCheck(){
+  const h = Math.floor(gameMin()/60);
+  if (lastHour != null && h !== lastHour && (h === 6 || h === 14 || h === 22) && (S.owned.pico || 0) > 0 && S.moral > 0){
+    const n = Math.min(4, 1 + vis(S.owned.pico || 0, 4));
+    for (let i = 0; i < n; i++){ spawnTraveler('pico', 1, 'down', i*.7, true); spawnTraveler('pico', 1, 'up', .3 + i*.7, true); }
+    shiftPlate = 3.5;
+  }
+  lastHour = h;
 }
 function drawFog(v1){
   const {u, frenteY} = L, a = frenteY + 26*u; if (a > v1) return;
@@ -631,6 +748,8 @@ export function render(t, dt){
   drawShaft(v0, v1);
   drawTicks(v0, v1);
   openedList().forEach(m => { const G = L.gal[m]; if (inView(G.top - 30, G.y + 30)) drawGallery(m, t); });
+  drawSites(t, v0, v1);
+  drawSkip(t, v0, v1);
   drawCage(t);
   drawFrente(t, v0, v1);
   drawSigns(v0, v1);
@@ -643,8 +762,11 @@ export function render(t, dt){
   }
   if (L.gy > v0 - 140){
     drawSurface(t, k);
+    if (shiftPlate > 0){ shiftPlate -= dt; plate(g, L.shaftX - 60*L.u, L.gy - 104*L.u, 'Cambio de turno', '#ffc62e', '#2a1a0e', L.u*.8); }
     if (k < 1){ g.fillStyle = `rgba(12,20,60,${(1 - k)*.28})`; g.fillRect(0, 0, W, L.gy + 2); }
   }
+  shiftCheck();
+  drawTravelers(dt, t, v0, v1);
   drawParticles(dt);
   g.setTransform(1, 0, 0, 1, 0, 0);
   if (S.section === 'mina') drawRail(t);
@@ -722,10 +844,10 @@ on('dig', (x, y, m, p) => {
 on('digFull', (x, y) => { if (!L) return; if (x == null) [x, y] = digPoint(); floater(x, y, '¡Almacén lleno!', '#ff7d72', 18); });
 on('nuggetGot', (m, g0) => { if (!nugget || nugget.px == null) return; const x = nugget.px, y = nugget.py; chipsAt(x, y, 22, m); floater(x, y - 16, '¡Pepita! +' + weight(g0), MCOL[m].txt, 24); emit('fxBurst', x, y - camY, MCOL[m].ore); });
 on('sold', m => { if (!L) return; trucks.push({x: (L.vaultX || L.shaftX) + 20*L.u, dir: 1, v: 110*L.u, ore: MCOL[m] ? MCOL[m].ore : '#ffc62e'}); });
-on('bought', id => { if (!L) return; L = null; layoutScene(); const G = L.gal[S.vein], surf = id === 'batea' || id === 'lix'; const x = surf ? (id === 'batea' ? L.shaftX - 80*L.u : L.shaftX + 150*L.u) : G.x0 + 60*L.u, y = surf ? L.gy - 10*L.u : G.y - 20*L.u; for (let i = 0; i < 14; i++) parts.push({k: 'dust', x, y, vx: (Math.random() - .5)*120, vy: -Math.random()*60, life: .9, max: .9, s: (5 + Math.random()*5)*L.u, col: 'rgba(255,240,210,'}); });
+on('bought', (id, n) => { if (!L) return; L = null; layoutScene(); spawnTraveler(id, n || 1, 'down', 0, false); const G = L.gal[S.vein], surf = id === 'batea' || id === 'lix'; const x = surf ? (id === 'batea' ? L.shaftX - 80*L.u : L.shaftX + 150*L.u) : G.x0 + 60*L.u, y = surf ? L.gy - 10*L.u : G.y - 20*L.u; for (let i = 0; i < 14; i++) parts.push({k: 'dust', x, y, vx: (Math.random() - .5)*120, vy: -Math.random()*60, life: .9, max: .9, s: (5 + Math.random()*5)*L.u, col: 'rgba(255,240,210,'}); });
 export function sceneDebug(){ return {L, camY}; }
 on('focusFind', id => { if (L && L.fpos[id]){ focusY(L.fpos[id].y); if (S.section !== 'mina') showSection('mina'); } });
-on('sceneReset', () => { parts = []; floats = []; trucks = []; L = null; camY = 0; camTarget = null; lastVein = null; topoVis = null; });
+on('sceneReset', () => { parts = []; floats = []; trucks = []; travelers = []; lastHour = null; L = null; camY = 0; camTarget = null; lastVein = null; topoVis = null; });
 on('crew', () => { L = null; });
 on('layout', () => { L = null; });
 addEventListener('resize', resizeScene);
