@@ -1,7 +1,9 @@
-import { $, setT } from '../core/dom.js';
+import { K } from '../core/bus.js';
+import { $, esc, setT } from '../core/dom.js';
 import { clamp, fmtT, money, nf0, smoney } from '../core/format.js';
 import { CATS_IN, CATS_OUT, RES } from '../data/content.js';
 import { LOAN_RATE, capR, capRCost, estRates, isDay, loanLimit, mineCostMult, needs, openedMk, plantCost, plantOut, rPrice, rUnitFmt, repairCost, solarCost, solarOut, taxRate, util, windCost, windOut } from '../game/economy.js';
+import { HEALTH_TXT, health, prodLoss } from '../game/health.js';
 import { S, fac, has, lvReq, maintF, unl } from '../game/state.js';
 import { fitCanvas } from '../render/charts.js';
 import { paintIcons } from './icons.js';
@@ -31,6 +33,12 @@ function drawBars(c, arr){
 function barState(el, frac){ el.querySelector('i').style.width = clamp(frac*100,0,100) + '%'; el.classList.toggle('warn', frac < .5 && frac >= .2); el.classList.toggle('bad', frac < .2); }
 export function updateFin(){
   const R = estRates(), N0 = needs(), cm = mineCostMult();
+  const H = health(), fh = $('#finHealth'); fh.dataset.h = String(H.lv);
+  const loss = prodLoss();
+  setT($('#fhTitle'), H.lv ? `${HEALTH_TXT[H.lv]}: ${H.list.length} ${H.list.length > 1 ? 'cosas que arreglar' : 'cosa que arreglar'}` : 'Todo en orden');
+  setT($('#fhSub'), H.lv ? (loss > 0.005 ? `Estás dejando de producir ≈ ${money(loss)}/s (${money(loss*60)} por minuto).` : 'De momento no te cuesta producción, pero conviene arreglarlo.') : `Tu equipo rinde al 100 % y ganas ${smoney(R.net)}/s.`);
+  const hk = H.list.map(x => x.key + x.txt + (x.fix || '')).join();
+  if (hk !== K.fh){ K.fh = hk; $('#fhList').innerHTML = H.list.map(x => `<li data-h="${x.lv}"><span>${esc(x.txt)}</span>${x.act ? `<button type="button" class="btn sm ${x.lv > 1 ? 'btn-red' : 'btn-gold'}" data-act="${x.act}">${esc(x.fix || 'Arreglar')}</button>` : x.fix ? `<small>${esc(x.fix)}</small>` : ''}</li>`).join(''); }
   const N = {e:N0.e*cm*util, f:N0.f*cm*util, x:N0.x*cm*util, sal:N0.sal*cm*(0.2+0.8*util), mv:N0.mv};
   const fn = $('#fNet'); setT(fn, smoney(R.net) + '/s'); fn.className = 'val ' + (R.net >= 0 ? 't-up' : 't-down');
   setT($('#fInc'), money(R.inc) + '/s'); setT($('#fExp'), money(R.exp) + '/s');
@@ -63,7 +71,7 @@ export function updateFin(){
   $('#chkAutoE').checked = !!S.auto.e; $('#chkChargeE').checked = !!S.auto.eCharge; $('#chkAutof').checked = !!S.auto.f; $('#chkAutox').checked = !!S.auto.x;
   $('#chkAutoPay').checked = !!S.autoPay; $('#chkMaint').checked = !!S.maintAuto;
   setT($('#moralTxt'), S.moral <= 0 ? 'Huelga' : `${nf0.format(S.moral)} %`); barState($('#moralBarW'), S.moral/100);
-  setT($('#payInfo'), `Nómina: ${money(N.sal*60)} cada minuto${openedMk().length > 1 ? ` (${openedMk().length} minas: +50 % de plantilla por cada mina extra)` : ''} · próxima paga en ${fmtT(S.payT)}${S.arrears ? ` · atrasos: ${money(S.arrears)}` : ''}. Con los almacenes llenos la plantilla para y cobra solo el 20 %. Por debajo del 60 % de moral se rinde menos; a 0 hay huelga.`);
+  setT($('#payInfo'), `Nómina: ${money(N.sal*60)} cada minuto${openedMk().length > 1 ? ` (${openedMk().length} minas: +50 % de plantilla por cada mina extra)` : ''} · próxima paga en ${fmtT(S.payT)}${S.arrears ? ` · atrasos: ${money(S.arrears)}` : ''}. Con los almacenes llenos la plantilla para y cobra solo el 20 %. Por debajo del 60 % de moral se rinde menos; a 0 hay huelga y la mina trabaja al 35 %.`);
   const ba = $('#btnArrears'); ba.hidden = !S.arrears; setT(ba, `Pagar atrasos · ${money(S.arrears)}`);
   setT($('#maintTxt'), N.mv ? `${nf0.format(S.maint)} %` : '—'); barState($('#maintBarW'), N.mv ? S.maint/100 : 1);
   setT($('#maintInfo'), N.mv ? `Las máquinas se desgastan con el uso y rinden al ${nf0.format(maintF()*100)} %. ${has('u_taller') ? 'Tu taller reduce el desgaste a la mitad.' : ''}` : 'Solo se desgastan las máquinas (desde la vagoneta en adelante).');

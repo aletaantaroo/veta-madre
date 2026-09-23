@@ -2,7 +2,7 @@ import { emit, on, sfx, toast } from '../core/bus.js';
 import { weight } from '../core/format.js';
 import { CREW, METALS } from '../data/content.js';
 import { luckActive } from './finds.js';
-import { addXp } from './progress.js';
+import { XP_FR, addXp, xpMoney } from './progress.js';
 import { S, cap, clickPow, gps, mk, setDone, sk } from './state.js';
 
 /* ================= Picar y pepitas ================= */
@@ -16,7 +16,7 @@ export function dig(x, y){
   if (S.stock[m] >= cap(m)){ fullFlash = 1.2; sfx('bad'); emit('digFull', x, y, m); return false; }
   const p = Math.min(clickPow(m), cap(m) - S.stock[m]);
   S.stock[m] += p; S.mined += p*METALS[m].p0/80; S.clicks++;
-  addXp(1);
+  addXp(XP_FR.click);
   sfx('dig');
   emit('dig', x, y, m, p);
   return true;
@@ -32,7 +32,7 @@ export function collectNugget(){
   S.stock[m] += g; S.mined += g*METALS[m].p0/80; S.nuggets++;
   emit('nuggetGot', m, g);
   toast(`Has encontrado una pepita de ${weight(g)} de ${METALS[m].low}`, 'up');
-  addXp(g*mk(m).price*0.3);
+  xpMoney(g*mk(m).price, .3);
   sfx('nugget');
   nugget = null;
 }

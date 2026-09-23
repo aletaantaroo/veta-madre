@@ -2,7 +2,7 @@ import { toast, updateUI } from '../core/bus.js';
 import { clamp, gauss, money, nf0, nf2, nf3 } from '../core/format.js';
 import { BIZ, CREW, METALS, MK, RES } from '../data/content.js';
 import { sell } from './market.js';
-import { addXp, earn, log } from './progress.js';
+import { earn, log, xpMoney } from './progress.js';
 import { S, bizInc, bizMult, bizTotal, cap, crewMult, fac, gps, has, jewelPrice, jewelRate, metalConv, mk, ownFrac, physPrice, prodMult, unl } from './state.js';
 
 /* ================= operaciones: recursos, gastos, finanzas ================= */
@@ -63,7 +63,7 @@ function payday(total){
   S.money -= p; rec('nominas', -p); S.arrears = owed - p;
   if (S.arrears > 0.01){
     S.unpaid = true; S.moral = Math.max(0, S.moral - 25);
-    const msg = S.moral <= 0 ? `Huelga: la plantilla no trabaja hasta que pagues ${money(S.arrears)} de atrasos` : `No llegas a pagar las nóminas: debes ${money(S.arrears)} y la moral baja al ${nf0.format(S.moral)} %`;
+    const msg = S.moral <= 0 ? `Huelga: la plantilla trabaja al mínimo hasta que pagues ${money(S.arrears)} de atrasos` : `No llegas a pagar las nóminas: debes ${money(S.arrears)} y la moral baja al ${nf0.format(S.moral)} %`;
     toast(msg, 'down'); log(msg, 'down');
   } else { S.arrears = 0; if (total > 0) S.moral = Math.min(100, S.moral + (has('u_comedor') ? 25 : 10)); }
 }
@@ -148,9 +148,9 @@ export function buyRes(k){
   toast(`Compras ${nf0.format(b)} ${RES[k].unit} de ${RES[k].name.toLowerCase()} por ${money(b*p)}`); updateUI();
 }
 export function upRes(k){ const c = capRCost(k); if (S.money < c) return; S.money -= c; S.resLv[k]++; toast(`Amplías tu ${RES[k].store}: caben ${nf0.format(capR(k))} ${RES[k].unit}`); updateUI(); }
-export function buyWind(){ const c = windCost(); if (S.money < c) return; S.money -= c; S.wind++; addXp(c*0.05); toast(`Aerogenerador instalado (${S.wind}). Produce día y noche según el viento.`, 'up'); updateUI(); }
-export function buyPlant(k){ const c = plantCost(k); if (S.money < c) return; S.money -= c; addXp(c*0.05); if (k === 'f') S.plants.bio++; else S.plants.fab++; toast(k === 'f' ? 'Planta de biodiésel en marcha: 20 L/s a cambio de energía' : 'Fábrica de explosivos en marcha: 4 kg/s a cambio de energía', 'up'); updateUI(); }
-export function buySolar(){ const c = solarCost(); if (S.money < c) return; S.money -= c; addXp(c*0.05); S.solar++; toast(`Panel solar instalado (${S.solar}). De día genera ${nf0.format(S.solar*100)} kWh/s.`, 'up'); log(`Panel solar nº ${S.solar} (−${money(c)})`); updateUI(); }
+export function buyWind(){ const c = windCost(); if (S.money < c) return; S.money -= c; S.wind++; xpMoney(c, .05); toast(`Aerogenerador instalado (${S.wind}). Produce día y noche según el viento.`, 'up'); updateUI(); }
+export function buyPlant(k){ const c = plantCost(k); if (S.money < c) return; S.money -= c; xpMoney(c, .05); if (k === 'f') S.plants.bio++; else S.plants.fab++; toast(k === 'f' ? 'Planta de biodiésel en marcha: 20 L/s a cambio de energía' : 'Fábrica de explosivos en marcha: 4 kg/s a cambio de energía', 'up'); updateUI(); }
+export function buySolar(){ const c = solarCost(); if (S.money < c) return; S.money -= c; xpMoney(c, .05); S.solar++; toast(`Panel solar instalado (${S.solar}). De día genera ${nf0.format(S.solar*100)} kWh/s.`, 'up'); log(`Panel solar nº ${S.solar} (−${money(c)})`); updateUI(); }
 export function repair(){
   const c = repairCost(); if (c <= 0.01) return;
   if (S.money < c){ toast(`Reparar cuesta ${money(c)}.`); return; }

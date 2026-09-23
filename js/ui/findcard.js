@@ -48,6 +48,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && cardCur){ 
 
 function showBanner(si){
   const b = $('#stBanner');
+  if (!$('#lvup').hidden || !$('#fcard').hidden){ clearTimeout(bannerT); bannerT = setTimeout(() => showBanner(si), 1500); return; }
   b.style.setProperty('--sbc', ST_COL[si]);
   setT($('#sbName'), `${STRATA[si].name} · ${nf0.format(STRATA[si-1] ? STRATA[si-1].to : 0)} m`);
   setT($('#sbTxt'), ST_TXT[si] || '');
@@ -56,4 +57,6 @@ function showBanner(si){
   bannerT = setTimeout(() => { b.classList.add('out'); setTimeout(() => { b.hidden = true; b.classList.remove('out'); }, 450); }, 3800);
 }
 on('found', showCard);
-on('stratum', si => { if (si > 0) showBanner(si); });
+on('stratum', si => { if (si > 0){ lastSi = si; showBanner(si); } });
+let lastSi = 0;
+on('celebrate', () => { const b = $('#stBanner'); if (b.hidden || !lastSi) return; b.hidden = true; clearTimeout(bannerT); bannerT = setTimeout(() => showBanner(lastSi), 2700); });

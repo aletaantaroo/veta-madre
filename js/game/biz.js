@@ -3,7 +3,7 @@ import { $ } from '../core/dom.js';
 import { money, nf0, smoney } from '../core/format.js';
 import { BIZ, NSLOTS } from '../data/content.js';
 import { rec } from './economy.js';
-import { addXp, earn, log } from './progress.js';
+import { earn, log, xpMoney } from './progress.js';
 import { S, allStocks, bizCost, bizFull, mgrCost, sk, stComm, unl } from './state.js';
 
 /* ---- empresas ---- */
@@ -15,7 +15,7 @@ export function bizUp(id){
   S.money -= c; st.lv++;
   toast(st.lv === 1 ? `Abres ${b.name.toLowerCase()}` : `${b.name} sube a nivel ${st.lv}`, 'up');
   log(st.lv === 1 ? `Empresa nueva: ${b.name} (−${money(c)})` : `${b.name} a nivel ${st.lv} (−${money(c)})`);
-  addXp(c*0.05); K.biz = ''; updateUI();
+  xpMoney(c, .05); K.biz = ''; updateUI();
 }
 export function bizMgr(id){
   const b = BIZ.find(x=>x.id===id), st = S.biz[id]; if (!b || !st || !st.lv || st.mgr) return;

@@ -12,6 +12,16 @@ Tycoon minero en el navegador. Empiezas con un pico y una veta de oro y acabas c
 - **Empresas y bolsa:** negocios que trabajan solos, acciones con dividendos y salida a bolsa de tus propias empresas.
 - **Progreso:** niveles, habilidades, logros, contrarreloj y venta de la compañía a cambio de lingotes de legado.
 - **El descenso:** la mina baja estrato a estrato (arenisca, pizarra, granito, cuarzo, basalto y roca madre). Por el camino aparecen 30 hallazgos que se guardan en el **Museo**, con colecciones que dan ventajas permanentes, y unos cuantos secretos escondidos.
+- **Ritmo pausado (v10):** las secciones aparecen poco a poco según subes de nivel (Mercado en el 3, Finanzas en el 4, Empresas en el 12, Bolsa en el 20…). El panel de **Producción** de la mina te dice cuánto sacas, si algo va mal y cómo arreglarlo. Los avisos son discretos y quedan en la **campana**. Copias de seguridad automáticas y partida descargable en un archivo.
+- **Primeros pasos (v10.1):** la primera vez, el capataz y una flecha te enseñan a picar, vender y contratar. La tienda se pliega en una pestaña al borde y las mejoras van en desplegables por tipo.
+
+### Ajustar el ritmo
+
+Todo el ritmo depende de dos sitios:
+
+- `js/data/content.js` → `PACE` (producción del equipo) y `CLICK_PACE` (golpes). Más alto = más rápido.
+- `js/game/state.js` → `xpNeed` (experiencia por nivel). La experiencia se mide en «segundos de producción vendida», así que los niveles llegan a un ritmo parecido aunque la economía crezca mucho.
+- Los niveles de cada desbloqueo están en `UNLOCKS` (`js/data/content.js`).
 
 ## Estructura
 

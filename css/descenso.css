@@ -35,12 +35,12 @@
 .fc-acts .btn{flex:1}
 
 /* ---------- cartel de nuevo estrato ---------- */
-.st-banner{--sbc:#b8aecb;position:fixed;z-index:17;left:calc((100vw - var(--shop-w) - 28px)/2);top:calc(var(--hud-h) + env(safe-area-inset-top,0px) + 74px);transform:translateX(-50%);
-  display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 30px 14px;border:3px solid var(--ink);border-radius:16px;text-align:center;pointer-events:none;
+.st-banner{--sbc:#b8aecb;position:fixed;z-index:17;left:var(--scene-cx);top:calc(var(--hud-h) + env(safe-area-inset-top,0px) + 16px);transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 20px 9px;border:3px solid var(--ink);border-radius:16px;text-align:center;pointer-events:none;
   background:linear-gradient(180deg,color-mix(in srgb,var(--sbc) 30%,#fff) 0,var(--sbc) 60%,color-mix(in srgb,var(--sbc) 70%,#000) 100%);box-shadow:0 6px 0 var(--ink);animation:sbIn .6s cubic-bezier(.25,1.6,.45,1)}
-.st-banner .sb-k{font:900 12px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink);background:rgba(255,255,255,.55);padding:1px 8px;border-radius:6px}
-.st-banner b{font:400 34px/1.05 var(--display);color:#fff;text-shadow:var(--outline)}
-.st-banner span:last-child{font:800 13.5px/1.35 var(--body);color:#fff;text-shadow:0 1.5px 0 rgba(0,0,0,.55);max-width:420px}
+.st-banner .sb-k{font:900 10.5px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink);background:rgba(255,255,255,.55);padding:1px 8px;border-radius:6px}
+.st-banner b{font:400 24px/1.05 var(--display);color:#fff;text-shadow:var(--outline)}
+.st-banner span:last-child{font:800 12px/1.3 var(--body);color:#fff;text-shadow:0 1.5px 0 rgba(0,0,0,.55);max-width:340px}
 .st-banner.out{animation:sbOut .45s ease-in forwards}
 @keyframes sbIn{from{transform:translate(-50%,-30px) scale(.7);opacity:0}}
 @keyframes sbOut{to{transform:translate(-50%,-20px) scale(.9);opacity:0}}
@@ -95,7 +95,7 @@
   .rail-btn{min-height:30px;font-size:12px}
   .rail-down{font-size:9px;white-space:nowrap;letter-spacing:-.02em}
   .sec-mine.shop-open .rail{display:none}
-  .st-banner{left:50%;top:calc(var(--hud-h) + env(safe-area-inset-top,0px) + 12px);padding:8px 18px 10px;width:max-content;max-width:calc(100vw - 24px)}
-  .st-banner b{font-size:26px}
+  .st-banner{left:50%;top:calc(var(--hud-h) + env(safe-area-inset-top,0px) + 12px);padding:5px 16px 8px;width:max-content;max-width:calc(100vw - 24px)}
+  .st-banner b{font-size:20px}
 }
 @media (max-width: 640px){ .mu-items{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))} .mu-it img{width:56px;height:56px} }

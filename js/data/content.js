@@ -8,8 +8,8 @@ export const SPREAD = 0.004, TPC = 10, NSLOTS = 180;
 /* ================= contenido ================= */
 export const METALS = {
   au:{name:'Oro',   low:'oro',   p0:80,   sig:.011, fvol:.0008, capBase:5,     yld:1,    lv:1,  open:0,      line:'#e4b84c', ink:'#241a05', vein:['#8a6a1f','#d9ad44'], fl:['#e4b84c','#c9982f'], glow:'255,215,110', txt:'#f5d783'},
-  ag:{name:'Plata', low:'plata', p0:1,    sig:.018, fvol:.0011, capBase:400,   yld:1.15, lv:5,  open:20000,  line:'#cdd5d9', ink:'#1a2023', vein:['#5f676b','#d5dbde'], fl:['#e3e8ea','#aab3b8'], glow:'220,230,235', txt:'#eef3f4'},
-  cu:{name:'Cobre', low:'cobre', p0:.01,  sig:.009, fvol:.0007, capBase:40000, yld:1.3,  lv:10, open:400000, line:'#dd8c56', ink:'#2a1206', vein:['#6b3519','#d98a55'], fl:['#e39a66','#b8683a'], glow:'240,160,110', txt:'#f3b68c'},
+  ag:{name:'Plata', low:'plata', p0:1,    sig:.018, fvol:.0011, capBase:400,   yld:1.15, lv:8,  open:20000,  line:'#cdd5d9', ink:'#1a2023', vein:['#5f676b','#d5dbde'], fl:['#e3e8ea','#aab3b8'], glow:'220,230,235', txt:'#eef3f4'},
+  cu:{name:'Cobre', low:'cobre', p0:.01,  sig:.009, fvol:.0007, capBase:40000, yld:1.3,  lv:15, open:400000, line:'#dd8c56', ink:'#2a1206', vein:['#6b3519','#d98a55'], fl:['#e39a66','#b8683a'], glow:'240,160,110', txt:'#f3b68c'},
 };
 export const MK = ['au','ag','cu'];
 export const CREW = [
@@ -23,7 +23,9 @@ export const CREW = [
   {id:'tbm',      name:'Tuneladora',             plural:'Las tuneladoras',desc:'Un gusano de acero que no descansa nunca.',           cost:3.3e8, gps:2000},
 ];
 const CREW_OPS = {batea:{sal:.2}, pico:{sal:.2}, vagoneta:{sal:.1,e:1}, perfo:{sal:.1,e:1}, voladura:{sal:.1,e:1,x:1}, excav:{sal:.1,e:1,f:1}, lix:{sal:.1,e:1}, tbm:{sal:.1,e:1,f:1,x:1}};
-CREW.forEach(c => Object.assign(c, CREW_OPS[c.id]));
+/* Ritmo global (v10): la producción va 2,5 veces más despacio que en la v9; los golpes, algo menos. */
+export const PACE = 0.4, CLICK_PACE = 0.6;
+CREW.forEach(c => { Object.assign(c, CREW_OPS[c.id]); c.gps *= PACE; });
 const TIERS = {
   batea:['Batea de chapa','Canal de lavado'], pico:['Mangos de fresno','Turnos de noche'],
   vagoneta:['Raíles de acero','Cabrestante eléctrico'], perfo:['Brocas de diamante','Compresor doble'],
@@ -32,17 +34,17 @@ const TIERS = {
 };
 export const UP = [
   {id:'u_pico',     kind:'Mina',    name:'Pico de acero templado', desc:'Tus golpes arrancan el doble.', cost:50, req:()=>true},
-  {id:'u_broker',   kind:'Mercado', name:'Cuenta en un bróker', desc:'Abre la pestaña Trading del mercado: largo y corto con apalancamiento 1:5.', cost:300, req:()=>S.earned>=100},
-  {id:'u_analista', kind:'Mercado', name:'Analista de mercado', desc:'Media móvil, fase del mercado y aviso cuando el precio está alto o bajo.', cost:400, req:()=>S.earned>=150},
+  {id:'u_broker',   kind:'Mercado', name:'Cuenta en un bróker', desc:'Abre la pestaña Trading del mercado: largo y corto con apalancamiento 1:5.', cost:300, req:()=>unl('trading')},
+  {id:'u_analista', kind:'Mercado', name:'Analista de mercado', desc:'Media móvil, fase del mercado y aviso cuando el precio está alto o bajo.', cost:400, req:()=>unl('mercado') && S.earned>=150},
   {id:'u_casco',    kind:'Mina',    name:'Casco con linterna', desc:'Ves mejor la veta: golpes ×2.', cost:600, req:()=>S.clicks>=40},
-  {id:'u_agente',   kind:'Mercado', name:'Agente de ventas', desc:'Abre la pestaña Órdenes: ventas automáticas por precio y al llenarse el almacén.', cost:1200, req:()=>S.earned>=500},
+  {id:'u_agente',   kind:'Mercado', name:'Agente de ventas', desc:'Abre la pestaña Órdenes: ventas automáticas por precio y al llenarse el almacén.', cost:1200, req:()=>unl('mercado') && S.earned>=500},
   {id:'u_bollinger',kind:'Mercado', name:'Bandas de Bollinger', desc:'La banda en la que suele moverse el precio (media ± 2 desviaciones).', cost:2500, req:()=>has('u_analista')},
   {id:'u_detector', kind:'Mina',    name:'Detector de metales', desc:'Cada golpe suma además el 5 % de tu producción por segundo.', cost:4000, req:()=>gpsEq()>=0.02},
-  {id:'u_informante',kind:'Mercado',name:'Informante en el banco central', desc:'Antes de cada dato económico te dice hacia dónde cree que irán los metales.', cost:5000, req:()=>S.earned>=3000},
+  {id:'u_informante',kind:'Mercado',name:'Informante en el banco central', desc:'Antes de cada dato económico te dice hacia dónde cree que irán los metales.', cost:5000, req:()=>unl('trading') && S.earned>=3000},
   {id:'u_rsi',      kind:'Mercado', name:'Oscilador RSI', desc:'Mide si el precio viene de subir o bajar demasiado rápido (sobrecompra > 70, sobreventa < 30).', cost:6000, req:()=>has('u_bollinger')},
-  {id:'u_tasador',  kind:'Mercado', name:'Tasador propio', desc:'La comisión al vender metal físico baja del 3 % al 1 %.', cost:7500, req:()=>S.earned>=2500},
+  {id:'u_tasador',  kind:'Mercado', name:'Tasador propio', desc:'La comisión al vender metal físico baja del 3 % al 1 %.', cost:7500, req:()=>unl('mercado') && S.earned>=2500},
   {id:'u_guantes',  kind:'Mina',    name:'Guantes de cuero curtido', desc:'Golpes ×2.', cost:9000, req:()=>S.clicks>=250},
-  {id:'u_londres',  kind:'Mercado', name:'Mesa en la bolsa de Londres', desc:'Más compradores: vender mucho de golpe mueve el precio tres veces menos.', cost:15000, req:()=>S.earned>=8000},
+  {id:'u_londres',  kind:'Mercado', name:'Mesa en la bolsa de Londres', desc:'Más compradores: vender mucho de golpe mueve el precio tres veces menos.', cost:15000, req:()=>unl('mercado') && S.earned>=8000},
   {id:'u_pro',      kind:'Mercado', name:'Cuenta profesional', desc:'Desbloquea el apalancamiento 1:20.', cost:20000, req:()=>has('u_broker') && S.trades>=10},
   {id:'u_martillo', kind:'Mina',    name:'Martillo percutor', desc:'Golpes ×2.', cost:250000, req:()=>S.clicks>=800},
 ];
@@ -90,16 +92,22 @@ export const STRATA = [
   {name:'Basalto',    to:4000, base:'#3d3c40', hi:'#58575c', lo:'#252427'},
   {name:'Roca madre', to:Infinity, base:'#5c3d36', hi:'#7c564b', lo:'#3a2521'},
 ];
+/* Desbloqueos por nivel. Con «sec» aparece además un botón nuevo en el dock. */
 export const UNLOCKS = [
-  {lv:3,  key:'contracts', txt:'Contratos con clientes'},
-  {lv:4,  key:'loans',     txt:'Préstamos bancarios'},
-  {lv:5,  key:'ag',        txt:'Yacimiento de plata'},
-  {lv:6,  key:'taxes',     txt:'Hacienda te encuentra: impuestos cada 5 min'},
-  {lv:8,  key:'biz',       txt:'Empresas'},
-  {lv:10, key:'cu',        txt:'Yacimiento de cobre'},
-  {lv:12, key:'stocks',    txt:'Bolsa de valores'},
-  {lv:15, key:'ipo',       txt:'Sacar tus empresas a bolsa'},
-  {lv:20, key:'prestige',  txt:'Vender la compañía con bonus'},
+  {lv:2,  key:'habilidades', sec:'habilidades', txt:'Habilidades: gasta tus puntos'},
+  {lv:2,  key:'logros',    sec:'logros',   txt:'Logros y estadísticas'},
+  {lv:3,  key:'mercado',   sec:'mercado',  txt:'Mercado: gráfico de precios'},
+  {lv:4,  key:'finanzas',  sec:'finanzas', txt:'Finanzas: tus cuentas'},
+  {lv:5,  key:'contracts', txt:'Contratos con clientes'},
+  {lv:7,  key:'loans',     txt:'Préstamos bancarios'},
+  {lv:8,  key:'ag',        txt:'Yacimiento de plata'},
+  {lv:10, key:'trading',   txt:'Cuenta en un bróker (trading)'},
+  {lv:11, key:'taxes',     txt:'Hacienda te encuentra: impuestos cada 5 min'},
+  {lv:12, key:'biz',       sec:'empresas', txt:'Empresas'},
+  {lv:15, key:'cu',        txt:'Yacimiento de cobre'},
+  {lv:20, key:'stocks',    sec:'bolsa',    txt:'Bolsa de valores'},
+  {lv:21, key:'ipo',       txt:'Sacar tus empresas a bolsa'},
+  {lv:22, key:'prestige',  txt:'Vender la compañía con bonus'},
 ];
 export const SKILLS = [
   {b:'m', id:'m1', t:0, name:'Brazo fuerte', desc:'Golpes +50 %.', cost:1, req:[]},
@@ -130,13 +138,14 @@ export const BRANCHES = [
   {k:'e', name:'Empresario', desc:'Empresas más baratas y rentables.'},
 ];
 export const BIZ = [
-  {id:'joyeria',    name:'Joyería',            lv:8,  cost:5000,  inc:4,     desc:'Convierte tu oro en joyas y las vende un 30 % por encima del spot. Consume oro de tu almacén.'},
-  {id:'refineria',  name:'Refinería',          lv:9,  cost:25000, inc:70,    desc:'Cada nivel sube un 2 % el precio al que vendes tu metal físico (hasta +40 %).'},
-  {id:'transporte', name:'Transporte blindado',lv:11, cost:80000, inc:200,   desc:'Cada nivel amplía un 20 % todas tus cajas fuertes.'},
-  {id:'inmo',       name:'Inmobiliaria',       lv:13, cost:3e5,   inc:800,   desc:'Alquileres: ingresos estables y sin sorpresas.'},
-  {id:'banco',      name:'Banco',              lv:16, cost:2e6,   inc:5000,  desc:'Presta a otras empresas: ingresos altos y constantes.'},
-  {id:'tec',        name:'Tecnológica',        lv:19, cost:1.5e7, inc:40000, desc:'Ingresos enormes pero muy variables: su rendimiento cambia cada minuto.'},
+  {id:'joyeria',    name:'Joyería',            lv:12, cost:5000,  inc:4,     desc:'Convierte tu oro en joyas y las vende un 30 % por encima del spot. Consume oro de tu almacén.'},
+  {id:'refineria',  name:'Refinería',          lv:13, cost:25000, inc:70,    desc:'Cada nivel sube un 2 % el precio al que vendes tu metal físico (hasta +40 %).'},
+  {id:'transporte', name:'Transporte blindado',lv:15, cost:80000, inc:200,   desc:'Cada nivel amplía un 20 % todas tus cajas fuertes.'},
+  {id:'inmo',       name:'Inmobiliaria',       lv:17, cost:3e5,   inc:800,   desc:'Alquileres: ingresos estables y sin sorpresas.'},
+  {id:'banco',      name:'Banco',              lv:19, cost:2e6,   inc:5000,  desc:'Presta a otras empresas: ingresos altos y constantes.'},
+  {id:'tec',        name:'Tecnológica',        lv:21, cost:1.5e7, inc:40000, desc:'Ingresos enormes pero muy variables: su rendimiento cambia cada minuto.'},
 ];
+BIZ.forEach(b => b.inc *= PACE);
 export const STOCKS = [
   {id:'CIE', name:'Minas del Cierzo',     sector:'Minería de oro',   p:42,  vol:.005, mu:.00004, beta:{au:1.3}, div:0,     desc:'Tu rival. Se mueve con el oro, pero más fuerte.'},
   {id:'ARG', name:'Argenta Metales',      sector:'Minería de plata', p:18,  vol:.006, mu:.00003, beta:{ag:1.2}, div:.001,  desc:'Sigue a la plata con fuerza.'},
@@ -195,8 +204,8 @@ ACH.push(
   {id:'r_ag',   timed:2400,  name:'Fiebre de la plata', desc:'Abre el yacimiento de plata en menos de 40 min.', test:()=>!!S.opened.ag},
   {id:'r_1m',   timed:5400,  name:'Millón exprés', desc:'Ingresa 1 M€ en menos de 1 h 30 min.', test:()=>S.earned>=1e6},
   {id:'r_biz3', timed:7200,  name:'Emprendedor en serie', desc:'Ten 3 empresas en menos de 2 h.', test:()=>bizCount()>=3},
-  {id:'r_lv15', timed:10800, name:'Ascenso meteórico', desc:'Llega al nivel 15 en menos de 3 h.', test:()=>S.level>=15},
-  {id:'r_100m', timed:18000, name:'Tiburón', desc:'Ingresa 100 M€ en menos de 5 h.', test:()=>S.earned>=1e8},
+  {id:'r_lv15', timed:5400, name:'Ascenso meteórico', desc:'Llega al nivel 15 en menos de 1 h 30 min.', test:()=>S.level>=15},
+  {id:'r_100m', timed:9000, name:'Tiburón', desc:'Ingresa 100 M€ en menos de 2 h 30 min.', test:()=>S.earned>=1e8},
   {id:'r_nodebt', cond:true, name:'Sin deber nada a nadie', desc:'Ingresa 1 M€ en una compañía sin pedir ningún préstamo.', test:()=>S.earned>=1e6 && !S.borrowed, failed:()=>S.borrowed},
   {id:'r_boss',   cond:true, name:'Buen patrón', desc:'Llega al nivel 12 sin dejar ni una nómina sin pagar.', test:()=>S.level>=12 && !S.unpaid, failed:()=>S.unpaid},
   {id:'a_solar', name:'Energía propia', desc:'Instala 10 paneles solares.', test:()=>S.solar>=10},
@@ -217,9 +226,9 @@ export const OBJ = [
   {txt:'Pica la roca 15 veces', r:20, test:()=>S.clicks>=15},
   {txt:'Vende tu primer oro (botón «Vender todo»)', r:20, test:()=>S.sold>0},
   {txt:'Contrata un buscador con batea', r:30, test:()=>(S.owned.batea||0)>=1},
-  {txt:'Compra el Pico de acero templado en Mejoras', r:40, test:()=>has('u_pico')},
+  {txt:'Compra el Pico de acero templado (Tienda → Mejoras → Mina)', r:40, test:()=>has('u_pico')},
   {txt:'Ten 5 buscadores y 1 minero', r:80, test:()=>(S.owned.batea||0)>=5 && (S.owned.pico||0)>=1},
-  {txt:'Amplía la caja fuerte (Mercado → Vender)', r:150, test:()=>S.cap>=1},
+  {txt:'Amplía la caja fuerte (botón «Ampliar» del panel de producción)', r:150, test:()=>S.cap>=1},
   {txt:'Aprende tu primera habilidad', r:200, test:()=>Object.keys(S.skills).length>=1},
   {txt:'Cumple un contrato con un cliente', r:400, test:()=>S.conDone>=1},
   {txt:'Compra una vagoneta y mira su consumo en Finanzas', r:600, test:()=>(S.owned.vagoneta||0)>=1},
@@ -262,10 +271,10 @@ export const CATS_OUT = [['nominas','Nóminas'],['energia','Energía'],['combust
 /* ================= el descenso: galerías, hallazgos y secretos ================= */
 export const GAL_DEPTH = {au: 5, ag: 180, cu: 480};
 export const RARITY = {
-  c: {name: 'Común', col: '#3fcf6c', dark: '#1f9447', sec: 45, floor: 800, xp: .10},
-  r: {name: 'Raro', col: '#3ea8ff', dark: '#1d6fc4', sec: 150, floor: 3000, xp: .20},
-  e: {name: 'Épico', col: '#a06bff', dark: '#6737d1', sec: 480, floor: 25000, xp: .40},
-  l: {name: 'Legendario', col: '#ffc62e', dark: '#e0950b', sec: 1500, floor: 250000, xp: .80},
+  c: {name: 'Común', col: '#3fcf6c', dark: '#1f9447', sec: 20, floor: 40, xp: .04},
+  r: {name: 'Raro', col: '#3ea8ff', dark: '#1d6fc4', sec: 45, floor: 150, xp: .08},
+  e: {name: 'Épico', col: '#a06bff', dark: '#6737d1', sec: 90, floor: 1200, xp: .15},
+  l: {name: 'Legendario', col: '#ffc62e', dark: '#e0950b', sec: 180, floor: 12000, xp: .30},
 };
 export const FINDS = [
   {id: 'chapa', name: 'Chapa de gaseosa', d: 12, rar: 'c', txt: 'De una marca que ya no existe. Todavía hace «pssst».'},

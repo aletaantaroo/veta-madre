@@ -12,7 +12,8 @@ export const luckActive = () => luckT > 0;
 const isNight = () => !isDay();
 function findVisible(f){ return !S.finds[f.id] && frenteDepth() >= f.d && (!f.night || isNight()); }
 export function visibleFinds(){ return FINDS.filter(findVisible); }
-function findReward(f){ const R = RARITY[f.rar]; return Math.max(R.floor*.05*Math.pow(1.6, S.level - 1), R.sec*Math.max(estRates().inc, gpsEq()*mk('au').price)); }
+/* Un hallazgo paga unos segundos de producción (nunca menos de un mínimo por rareza): premia, pero no dispara la economía. */
+function findReward(f){ const R = RARITY[f.rar]; return Math.max(R.floor, R.sec*Math.max(estRates().inc, gpsEq()*mk('au').price)); }
 
 export function findsStep(el){
   if (luckT > 0) luckT -= el;

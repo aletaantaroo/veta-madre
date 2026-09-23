@@ -3,10 +3,11 @@ import { $, dpr, refreshDpr, setT } from '../core/dom.js';
 import { clamp, money, mulberry32, nf0, weight } from '../core/format.js';
 import { RM } from '../core/settings.js';
 import { BIZ, CREW, FINDS, GAL_DEPTH, METALS, MK, RARITY, STRATA } from '../data/content.js';
+import { needs } from '../game/economy.js';
 import { collectFind, patTopo, secret, visibleFinds } from '../game/finds.js';
 import { collectNugget, dig, nugget } from '../game/mining.js';
 import { openVein } from '../game/shop.js';
-import { S, cap, frenteDepth, gps, stratumIdx } from '../game/state.js';
+import { S, cap, capCost, fac, frenteDepth, gps, lvReq, stratumIdx, unl } from '../game/state.js';
 import { findImg } from './findArt.js';
 import { building, cage, cart, cloud, drill, excavator, headframe, lerpCol, miner, nuggetSprite, plant, rival, shade, solar, tank, tbm, tree, truck, turbine, vault } from './sprites.js';
 
@@ -87,6 +88,7 @@ function layoutScene(){
   const shopR = !mobile && S.section === 'mina' ? rectOf('#shop') : null;
   const railR = S.section === 'mina' ? rectOf('#rail') : null;
   const dig = S.section === 'mina' ? rectOf('#digDock') : null;
+  const card = !mobile && S.section === 'mina' ? rectOf('#prodCard') : null;
   const sx0 = 0, sx1 = shopR ? shopR.left - 10 : (!mobile && L ? L.sx1 : W);
   const railLeft = railR ? railR.left - 6 : (L ? L.railLeft : sx1);
   const sy0 = hud ? hud.bottom : 70, sy1 = dock ? dock.top : H - 90;
@@ -95,20 +97,21 @@ function layoutScene(){
   const SW = sx1 - sx0, SH = digTop - sy0;
   const u = clamp(Math.min(SW/980, SH/540)*1.12, .58, 1.25);
   const gy = Math.round(sy0 + SH*(mobile ? .42 : .36));
-  const shaftX = Math.round(sx0 + Math.max(SW*(mobile ? .24 : .3), 70*u));
+  const lx0 = card ? card.right + 10 : (!mobile && L ? L.lx0 : sx0);   // borde izquierdo visible (a la derecha del panel de producción)
+  const shaftX = Math.round(Math.min(Math.max(sx0 + Math.max(SW*(mobile ? .24 : .3), 70*u), lx0 + 150*u), railLeft - 280*u));
   const HS = Math.round(Math.max(560*u, SH*1.1)), top0 = gy + 14*u;
   const STY = []; for (let i = 0; i < 6; i++) STY.push(top0 + i*HS); STY.push(top0 + 5*HS + HS*1.6);
   const gh = 58*u, tot = CREW.reduce((a, c) => a + (S.owned[c.id] || 0), 0);
   const maxX = Math.min(sx1, railLeft) - 22*u, x0 = shaftX + 20*u;
   const len = Math.min(maxX - x0, (250 + 60*Math.log2(1 + tot))*u);
-  L = {sx0, sx1, sy0, sy1, SW, SH, u, gy, shaftX, gh, HS, STY, digTop, mobile, tot, railLeft, maxX, gal: {}, fpos: {}};
+  L = {sx0, lx0, sx1, sy0, sy1, SW, SH, u, gy, shaftX, gh, HS, STY, digTop, mobile, tot, railLeft, maxX, gal: {}, fpos: {}};
   MK.forEach(m => { const y = Math.round(depthY(GAL_DEPTH[m]) + gh*.5); L.gal[m] = {m, y, top: y - gh, x0, x1: x0 + len, maxX}; });
   FINDS.forEach((f, i) => {
     const r = mulberry32(i*977 + 13);
-    let y = depthY(f.d) + (r() - .5)*30*u, x = sx0 + 50*u + r()*(maxX - sx0 - 100*u);
+    let y = depthY(f.d) + (r() - .5)*30*u, x = lx0 + 50*u + r()*(maxX - lx0 - 100*u);
     if (Math.abs(x - shaftX) < 70*u) x = shaftX + (x < shaftX ? -80 : 100)*u;
     MK.forEach(m => { const G = L.gal[m]; if (y > G.top - 40*u && y < G.y + 40*u && x > shaftX - 50*u && x < G.x1 + 50*u) y = G.y + 70*u; });
-    L.fpos[f.id] = {x: Math.max(sx0 + 34*u, x), y};
+    L.fpos[f.id] = {x: Math.max(lx0 + 34*u, x), y};
   });
   L.frenteY = depthY(frenteDepth());
   L.camMax = Math.max(0, L.frenteY + 170*u - digTop);
@@ -170,13 +173,13 @@ function surfaceItems(){
   return items;
 }
 function drawGround(){
-  const {u, gy, shaftX, sx0} = L;
+  const {u, gy, shaftX, lx0} = L;
   g.fillStyle = '#6cc24a'; g.beginPath(); g.moveTo(0, gy - 3*u);
   for (let x = 0; x <= W + 10; x += 10) g.lineTo(x, gy - 3*u + Math.sin(x*.9)*1.4*u);
   g.lineTo(W, gy + 9*u); g.lineTo(0, gy + 9*u); g.closePath(); g.fill();
   g.fillStyle = '#4c9a34'; g.fillRect(0, gy + 6*u, W, 4*u);
   g.strokeStyle = '#2a1a0e'; g.lineWidth = 2; g.beginPath(); g.moveTo(0, gy + 10*u); g.lineTo(W, gy + 10*u); g.stroke();
-  const rx0 = sx0 + 26*u, rx1 = shaftX - 50*u;
+  const rx0 = lx0 + 26*u, rx1 = shaftX - 50*u;
   if (rx1 - rx0 > 60*u){
     g.beginPath(); g.moveTo(rx0, gy - 1); g.quadraticCurveTo((rx0 + rx1)/2, gy + 16*u, rx1, gy - 1); g.closePath();
     g.fillStyle = '#58b7f0'; g.fill(); g.strokeStyle = '#2a1a0e'; g.lineWidth = 2; g.stroke();
@@ -185,17 +188,20 @@ function drawGround(){
   for (let i = 0; i < 9; i++){ const r = mulberry32(i*53 + 7), x = r()*W, len = (18 + r()*30)*u; if (Math.abs(x - shaftX) < 40*u) continue; g.beginPath(); g.moveTo(x, gy + 10*u); g.quadraticCurveTo(x + (r() - .5)*20*u, gy + 10*u + len*.6, x + (r() - .5)*14*u, gy + 10*u + len); g.stroke(); }
 }
 function drawSurface(t, k){
-  const {u, gy, shaftX, sx0} = L, sx1 = Math.min(L.sx1, L.railLeft), night = k < .4;
+  const {u, gy, shaftX, lx0} = L, sx1 = Math.min(L.sx1, L.railLeft), night = k < .4;
   const nw = Math.min(7, S.wind || 0), ns = Math.min(14, S.solar || 0);
   for (let i = 0; i < nw; i++){ const x = sx1 - 40*u - i*52*u; turbine(g, x, hillY(x) + 4*u, .95*u, t*(0.6 + 3*(S.windF || .8)) + i); }
   for (let i = 0; i < ns; i++){ const x = shaftX + 110*u + i*20*u; solar(g, x, hillY(x) + 6*u, .8*u); }
   const rt = mulberry32(3);
-  for (let i = 0; i < 5; i++){ const x = sx0 + 8*u + rt()*(shaftX - 80*u); tree(g, x, gy - 1, (.75 + rt()*.4)*u, i, t); }
-  const nb = vis(S.owned.batea || 0, 6), rx0 = sx0 + 26*u, rx1 = shaftX - 50*u;
+  for (let i = 0; i < 5; i++){ const x = lx0 + 8*u + rt()*Math.max(0, shaftX - lx0 - 80*u); tree(g, x, gy - 1, (.75 + rt()*.4)*u, i, t); }
+  const nb = vis(S.owned.batea || 0, 6), rx0 = lx0 + 26*u, rx1 = shaftX - 50*u;
   for (let i = 0; i < nb; i++){ const x = rx0 + 16*u + (rx1 - rx0 - 32*u)*(nb > 1 ? i/(nb - 1) : .5); miner(g, x, gy + 2*u, .82*u, {pose: 'pan', t, seed: i*7 + 1, dir: i % 2 ? -1 : 1}); }
   headframe(g, shaftX, gy + 2*u, u, t*1.4);
   const anyFull = openedList().some(m => S.stock[m] >= cap(m));
   const vx = shaftX + 76*u; vault(g, vx, gy + 2*u, .95*u, S.cap + 1, anyFull, t); L.vaultX = vx;
+  L.vaultBox = {x0: vx - 32*u, x1: vx + 32*u, y0: gy - 70*u, y1: gy + 6*u};
+  if (anyFull && Math.floor(t*2) % 2) plate(g, vx, gy - 78*u, '¡Lleno!', '#ff5b4f', '#ffffff', u*.8);
+  else if (S.money >= capCost(S.cap) && openedList().some(m => S.stock[m] >= cap(m)*.8)) plate(g, vx, gy - 78*u, '+ Ampliar', '#ffc62e', '#2a1a0e', u*.75);
   const items = surfaceItems(), start = vx + 44*u, end = sx1 - 90*u;
   const total = items.reduce((a, it) => a + it.w*u + 10*u, 0), f = total > end - start && total > 0 ? (end - start)/total : 1;
   let x = start;
@@ -206,6 +212,7 @@ function drawSurface(t, k){
     else { building(g, it.id, cx, gy + 2*u, .95*u, it.lv, t, night); if (it.id === 'refineria' && Math.random() < .05) parts.push({k: 'smoke', x: cx + 10*u, y: gy - 60*u, vx: 6 + (S.windF || .8)*10, vy: -14, life: 3, max: 3, s: 5*u, col: 'rgba(220,220,230,'}); }
     x += w + 10*u*f;
   });
+  if (S.moral <= 0 || S.arrears > 0) picket(t, vx);
   const rx = sx1 - 44*u, dance = flagDance > 0;
   g.save(); if (dance) g.translate(0, -Math.abs(Math.sin(t*14))*5*u);
   rival(g, rx, gy + 2*u, .9*u, clamp(S.rival.fill, 0, 1), dance ? t*6 : t);
@@ -214,6 +221,31 @@ function drawSurface(t, k){
   if (lastRivalDumps >= 0 && S.rival.dumps > lastRivalDumps){ for (let i = 0; i < 20; i++) parts.push({k: 'dust', x: sx1 - 30*u, y: gy - 10*u, vx: (Math.random() - .5)*80, vy: -20 - Math.random()*40, life: 1.4, max: 1.4, s: (6 + Math.random()*8)*u, col: 'rgba(160,150,150,'}); trucks.push({x: sx1 - 20*u, dir: 1, v: 70*u, ore: '#8d8490'}); }
   lastRivalDumps = S.rival.dumps;
   trucks = trucks.filter(tr => { tr.x += tr.dir*tr.v*frameDt; truck(g, tr.x, gy + 2*u, .9*u, tr.ore, tr.dir, 1, t); return tr.x < W + 60 && tr.x > -60; });
+}
+
+/* ---------- consecuencias visibles: huelga, falta de energía y desgaste ---------- */
+function picket(t, vx){
+  const {u, gy} = L;
+  [[48, 0], [74, 1], [100, 2]].forEach(([dx, i]) => {
+    const x = vx + dx*u, bob = Math.abs(Math.sin(t*3 + i*1.3))*3*u;
+    miner(g, x, gy + 2*u, .82*u, {pose: 'idle', t, seed: i*4 + 2, dir: i % 2 ? -1 : 1});
+    g.save(); g.translate(x + 7*u, gy - 22*u - bob); g.rotate(Math.sin(t*2 + i)*.08);
+    g.strokeStyle = '#2a1a0e'; g.lineWidth = 2.4*u; g.beginPath(); g.moveTo(0, 14*u); g.lineTo(0, -12*u); g.stroke();
+    g.strokeStyle = '#7a4a1d'; g.lineWidth = 1.2*u; g.stroke();
+    g.fillStyle = '#fff5de'; g.strokeStyle = '#2a1a0e'; g.lineWidth = 1.8; g.beginPath(); g.roundRect(-16*u, -26*u, 32*u, 16*u, 3*u); g.fill(); g.stroke();
+    g.fillStyle = '#d2382d'; g.font = `400 ${Math.round(8.5*u)}px "Lilita One", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(i === 1 ? '¡PAGA!' : '¡HUELGA!', 0, -17.5*u);
+    g.restore();
+  });
+}
+function statusBadge(x, y, kind, t){
+  const {u} = L, b = Math.sin(t*4)*2*u;
+  g.save(); g.translate(x, y + b);
+  g.fillStyle = kind === 'e' ? '#2a1a0e' : '#fff5de'; g.strokeStyle = '#2a1a0e'; g.lineWidth = 2;
+  g.beginPath(); g.arc(0, 0, 11*u, 0, 6.2832); g.fill(); g.stroke();
+  if (kind === 'e'){ g.fillStyle = '#ffc62e'; g.beginPath(); g.moveTo(2*u, -8*u); g.lineTo(-5*u, 1.5*u); g.lineTo(-.5*u, 1.5*u); g.lineTo(-2*u, 8*u); g.lineTo(5*u, -1.5*u); g.lineTo(.5*u, -1.5*u); g.closePath(); g.fill(); }
+  else { g.fillStyle = '#6b4c30'; g.beginPath(); g.arc(-2*u, -2*u, 5*u, 0, 6.2832); g.fill(); g.fillStyle = '#fff5de'; g.beginPath(); g.arc(-2*u, -2*u, 2.2*u, 0, 6.2832); g.fill(); g.strokeStyle = '#6b4c30'; g.lineWidth = 3*u; g.beginPath(); g.moveTo(1*u, 1*u); g.lineTo(6*u, 6*u); g.stroke(); }
+  g.restore();
 }
 
 /* ---------- los estratos ---------- */
@@ -377,18 +409,21 @@ function drawGallery(m, t){
   g.restore();
   for (let x = x0 + 70*u; x < x1 - 20*u; x += 70*u){ g.strokeStyle = '#2a1a0e'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x, top + 8*u); g.lineTo(x, top + 14*u); g.stroke(); g.fillStyle = '#ffe9a8'; g.beginPath(); g.arc(x, top + 17*u, 3.4*u, 0, 6.2832); g.fill(); g.stroke(); }
   const {list, face, carts, su} = galleryUnits(m);
+  const strike = S.moral <= 0, lowMoral = S.moral < 60, noE = fac.e < .5, worn = S.maint < 40 && needs().mv > 0;
+  const full = S.stock[m] >= cap(m), tm = noE || full ? 0 : t;
   for (let k = 0; k < 6; k++){ const tw = Math.pow(.5 + .5*Math.sin(t*2.3 + k*1.7 + m.length), 10); if (tw < .1) continue; const sx = face + 6*u + (k % 3)*8*u, sy = top + gh*(.2 + (k*.13) % .7), s = (2 + 4*tw)*u; g.strokeStyle = `rgba(255,250,220,${tw})`; g.lineWidth = 1.4; g.beginPath(); g.moveTo(sx - s, sy); g.lineTo(sx + s, sy); g.moveTo(sx, sy - s); g.lineTo(sx, sy + s); g.stroke(); }
   for (let i = 0; i < carts; i++){
-    const a = x0 + 14*u, b = face - 30*u, sp = .16 + i*.05, p = .5 - .5*Math.cos(t*sp*2 + i*2.1), x = a + (b - a)*p, left = Math.sin(t*sp*2 + i*2.1) < 0;
+    const tc = noE || strike || full ? i*3.7 : t;
+    const a = x0 + 14*u, b = face - 30*u, sp = .16 + i*.05, p = .5 - .5*Math.cos(tc*sp*2 + i*2.1), x = a + (b - a)*p, left = Math.sin(tc*sp*2 + i*2.1) < 0;
     cart(g, x, y - 1*u, su, mc.ore, left ? 1 : .15);
-    miner(g, x + (left ? 16 : -16)*su, y, su*.9, {pose: 'push', t, seed: i + 11, dir: left ? -1 : 1});
+    miner(g, x + (left ? 16 : -16)*su, y, su*.9, {pose: noE || strike || full ? 'idle' : 'push', t, seed: i + 11, dir: left ? -1 : 1});
   }
   if (S.finds.vagoneta && dayK() < .35 && m === openedList()[openedList().length - 1]){
     const p = .5 - .5*Math.cos(t*.3), x = x0 + 20*u + (face - x0 - 60*u)*p;
     g.save(); g.globalAlpha = .45 + .15*Math.sin(t*3); cart(g, x, y - 6*u - Math.sin(t*2)*3*u, su, '#e8f4ff', 0); g.restore();
   }
   list.forEach(it => {
-    if (it.k === 'tbm'){ tbm(g, it.x, y + 1*u, .9*su, t); if (Math.random() < .25) chipsAt(it.x + 4*su, y - 20*su, 1, m); }
+    if (it.k === 'tbm'){ tbm(g, it.x, y + 1*u, .9*su, tm); if (tm && Math.random() < .25) chipsAt(it.x + 4*su, y - 20*su, 1, m); }
     else if (it.k === 'you'){
       const k = swingK > 0 ? 1 - swingK : null;
       if (sleeping){
@@ -399,12 +434,18 @@ function drawGallery(m, t){
       } else miner(g, it.x, y, su*1.08, {pose: 'swing', swing: k != null ? k : (.5 + .5*Math.sin(t*1.5))*.25, hat: '#ff5b4f', suit: '#3b7dd8', seed: 1});
       if (S.clicks < 40 && S.section === 'mina') arrow(g, it.x, y - 60*su - Math.abs(Math.sin(t*4))*6*u, u);
     }
-    else if (it.k === 'pico'){ const sp = 5 + (it.i % 3); miner(g, it.x, y, su, {pose: 'swing', t, speed: sp, seed: it.i*5 + 3}); if (Math.sin(t*sp + it.i*5 + 3) > .985) chipsAt(it.x + 16*su, y - 14*su, 2, m); }
-    else if (it.k === 'perfo'){ drill(g, it.x, y + 1*u, su*1.05, t + it.i); if (Math.random() < .08) parts.push({k: 'dust', x: it.x + 32*su, y: y - 14*su, vx: 10, vy: -6, life: .8, max: .8, s: 4*u, col: 'rgba(210,190,160,'}); }
-    else if (it.k === 'voladura') miner(g, it.x, y, su, {pose: 'dyn', t, seed: it.i*3 + 4});
-    else if (it.k === 'excav') excavator(g, it.x, y + 1*u, su*.92, t, it.i*2);
+    else if (it.k === 'pico'){ const idle = strike || full || (lowMoral && it.i % 2 === 0), sp = 5 + (it.i % 3); miner(g, it.x, y, su, {pose: idle ? 'idle' : 'swing', t, speed: sp, seed: it.i*5 + 3}); if (!idle && Math.sin(t*sp + it.i*5 + 3) > .985) chipsAt(it.x + 16*su, y - 14*su, 2, m); }
+    else if (it.k === 'perfo'){ drill(g, it.x, y + 1*u, su*1.05, tm ? t + it.i : it.i); if (tm && Math.random() < .08) parts.push({k: 'dust', x: it.x + 32*su, y: y - 14*su, vx: 10, vy: -6, life: .8, max: .8, s: 4*u, col: 'rgba(210,190,160,'}); }
+    else if (it.k === 'voladura') miner(g, it.x, y, su, {pose: strike || full ? 'idle' : 'dyn', t, seed: it.i*3 + 4});
+    else if (it.k === 'excav') excavator(g, it.x, y + 1*u, su*.92, tm, it.i*2);
+    if (worn && it.k !== 'you' && it.k !== 'pico' && it.k !== 'voladura' && Math.random() < .03) parts.push({k: 'dust', x: it.x, y: y - 26*su, vx: 4, vy: -18, life: 1.6, max: 1.6, s: 6*u, col: 'rgba(70,64,60,'});
   });
-  if ((S.owned.voladura || 0) > 0 && !RM){
+  const machines = list.filter(it => it.k === 'perfo' || it.k === 'excav' || it.k === 'tbm');
+  if (noE && machines.length) statusBadge(machines[0].x, top - 2*u, 'e', t);
+  else if (worn && machines.length) statusBadge(machines[0].x, top - 2*u, 'w', t);
+  if (strike) plate(g, (x0 + face)/2, y - gh*.55, '¡Huelga! Paga los atrasos', '#ff5b4f', '#ffffff', u*.85);
+  else if (full) plate(g, (x0 + face)/2, y - gh*.55, 'Almacén lleno: mina parada', '#ffc62e', '#2a1a0e', u*.8);
+  if ((S.owned.voladura || 0) > 0 && !RM && !strike && !full && fac.x > .5){
     blastCd[m] -= frameDt;
     if (blastCd[m] <= 0){ blastCd[m] = 9 + Math.random()*9; flashes.push({x: face + 10*u, y: top + gh*.5, life: .5, max: .5, r: 60*u}); chipsAt(face + 4*u, top + gh*.5, 16, m); for (let i = 0; i < 8; i++) parts.push({k: 'dust', x: face, y: top + gh*.5, vx: -20 - Math.random()*60, vy: (Math.random() - .5)*30, life: 1.2, max: 1.2, s: (6 + Math.random()*6)*u, col: 'rgba(200,180,150,'}); if (inView(top, y)) { shake = Math.max(shake, 2); sfx('boom'); } }
   }
@@ -443,8 +484,8 @@ function drawSigns(v0, v1){
     const G = L.gal[m], M = METALS[m];
     if (S.opened[m]){ G.sign = null; return; }
     const y = G.y - gh*.5, x = shaftX + 110*u; if (y < v0 - 40 || y > v1 + 40){ G.sign = null; return; }
-    const lvOk = S.level >= M.lv;
-    plate(g, x, y, lvOk ? `Abrir ${M.low} · ${money(M.open)}` : `${M.name} · nivel ${M.lv}`, lvOk ? '#ffc62e' : '#e9dcc3', '#2a1a0e', u, !lvOk);
+    const lvOk = unl(m);
+    plate(g, x, y, lvOk ? `Abrir ${M.low} · ${money(M.open)}` : `${M.name} · nivel ${lvReq(m)}`, lvOk ? '#ffc62e' : '#e9dcc3', '#2a1a0e', u, !lvOk);
     G.sign = {x0: x - 110*u, x1: x + 110*u, y0: y - 16*u, y1: y + 16*u};
   });
 }
@@ -569,7 +610,7 @@ export function render(t, dt){
     if (S.finds.topo){
       if (topoVis){ if ((topoVis.life -= dt) <= 0){ topoVis = null; topoCd = 40 + Math.random()*60; } }
       else if ((topoCd -= dt) <= 0){
-        const {u} = L, y = camY + L.sy0 + 60*u + Math.random()*Math.max(10, L.digTop - L.sy0 - 120*u), x = L.sx0 + 60*u + Math.random()*(L.maxX - L.sx0 - 120*u);
+        const {u} = L, y = camY + L.sy0 + 60*u + Math.random()*Math.max(10, L.digTop - L.sy0 - 120*u), x = L.lx0 + 60*u + Math.random()*(L.maxX - L.lx0 - 120*u);
         const hitGal = MK.some(m => { const G = L.gal[m]; return y > G.top - 30*u && y < G.y + 30*u && x > L.shaftX - 40*u && x < G.x1 + 40*u; });
         if (y > L.gy + 30*u && y < L.frenteY && !hitGal && Math.abs(x - L.shaftX) > 60*u) topoVis = {x, y, life: 7};
         else topoCd = 2;
@@ -629,6 +670,7 @@ function tapAt(x, sy){
   if (topoVis && Math.hypot(x - topoVis.x, y - topoVis.y) < 32*u){ const g0 = patTopo(); floater(topoVis.x, topoVis.y - 30*u, `¡Gracias, topo! +${weight(g0)}`, '#ffd84a', 18); chipsAt(topoVis.x, topoVis.y, 12, S.vein); emit('fxOre', x, sy, S.vein); topoVis = null; topoCd = 50 + Math.random()*70; return; }
   for (const f of visibleFinds()){ const p = L.fpos[f.id]; if (p && Math.hypot(x - p.x, y - p.y) < 42*u){ chipsAt(p.x, p.y, 24, S.vein); flashes.push({x: p.x, y: p.y, life: .6, max: .6, r: 80*u}); emit('fxBurst', p.x, p.y - camY, RARITY[f.rar].col); collectFind(f.id); return; } }
   if (nugget && nugget.px != null && Math.hypot(x - nugget.px, y - nugget.py) < 34*u){ collectNugget(); return; }
+  const vb = L.vaultBox; if (vb && x > vb.x0 && x < vb.x1 && y > vb.y0 && y < vb.y1){ emit('vaultTap'); sfx('ui'); return; }
   for (const m of MK){ const G = L.gal[m]; if (G.sign && x > G.sign.x0 && x < G.sign.x1 && y > G.sign.y0 && y < G.sign.y1){ openVein(m); return; } }
   for (const m of MK){ const G = L.gal[m]; if (S.opened[m] && x > L.shaftX && x < G.x1 + 30*u && y > G.top - 14*u && y < G.y + 12*u && m !== S.vein){ lastVein = m; S.vein = m; K.vein = ''; updateUI(); break; } }
   dig(x, y);

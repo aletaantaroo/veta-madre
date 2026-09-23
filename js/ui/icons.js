@@ -22,6 +22,16 @@ const I = {
   wrench: `<path d="M14.6 3.4a5 5 0 0 0-4.2 6.8L3.6 17a2.2 2.2 0 0 0 3.2 3.2l6.8-6.8a5 5 0 0 0 6.8-4.2l-3 1.2-2.4-2.4z" fill="#dfe7ef" ${O}/>`,
   museum: `<path d="M10 3.5h4v2.2c3.2 1.6 4.8 4.8 4 8.4-.7 3.2-3.2 5.6-6 5.6s-5.3-2.4-6-5.6c-.8-3.6.8-6.8 4-8.4z" fill="#fff" ${O}/><path d="M8.6 8.4q-3 .6-2.4 4M15.4 8.4q3 .6 2.4 4" fill="none" ${O}/><path d="M7 13.4h10" stroke="#b8923a" stroke-width="1.8"/><path d="M5 21.2h14" ${O}/>`,
   close: `<path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/>`,
+  bell: `<path d="M12 3.2a5.6 5.6 0 0 1 5.6 5.6v3.6l2 3.4H4.4l2-3.4V8.8A5.6 5.6 0 0 1 12 3.2z" fill="#ffc62e" ${O}/><path d="M9.6 18.4a2.4 2.4 0 0 0 4.8 0" fill="#ffc62e" ${O}/><path d="M9 7.2a3.4 3.4 0 0 1 2.2-1.6" stroke="#fff6c8" stroke-width="1.6" stroke-linecap="round"/>`,
+  sound: `<path d="M3.6 9.2h3.6l5-4v13.6l-5-4H3.6z" fill="#3ea8ff" ${O}/><path d="M15.4 8.6a4.6 4.6 0 0 1 0 6.8M18 6a8.4 8.4 0 0 1 0 12" fill="none" stroke="#2a1a0e" stroke-width="2" stroke-linecap="round"/>`,
+  motion: `<path d="M12 2.8l1.9 4.8 4.8 1.9-4.8 1.9L12 16.2l-1.9-4.8-4.8-1.9 4.8-1.9z" fill="#a06bff" ${O}/><path d="M18.6 14.6l.9 2.2 2.2.9-2.2.9-.9 2.2-.9-2.2-2.2-.9 2.2-.9z" fill="#ffc62e" ${O}/><path d="M5.6 15.6l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z" fill="#2cd3c6" ${O}/>`,
+  book: `<path d="M3.4 5.4c3-1.4 5.8-1.2 8.6.8v13.4c-2.8-2-5.6-2.2-8.6-.8z" fill="#fff" ${O}/><path d="M20.6 5.4c-3-1.4-5.8-1.2-8.6.8v13.4c2.8-2 5.6-2.2 8.6-.8z" fill="#3fcf6c" ${O}/>`,
+  chat: `<path d="M4 5.2h16a1.6 1.6 0 0 1 1.6 1.6v8.4a1.6 1.6 0 0 1-1.6 1.6h-8.4L7 20.4v-3.6H4a1.6 1.6 0 0 1-1.6-1.6V6.8A1.6 1.6 0 0 1 4 5.2z" fill="#fff" ${O}/><path d="M7 10h10M7 13h6" stroke="#9a7a57" stroke-width="1.8" stroke-linecap="round"/>`,
+  disk: `<path d="M4.4 3.6h12.4l2.8 2.8v12.4a1.6 1.6 0 0 1-1.6 1.6H4.4a1.6 1.6 0 0 1-1.6-1.6V5.2a1.6 1.6 0 0 1 1.6-1.6z" fill="#3ea8ff" ${O}/><rect x="7" y="3.8" width="8.4" height="5.2" rx=".8" fill="#fff" ${O}/><rect x="6.4" y="12.6" width="11.2" height="7.4" rx="1" fill="#fff5de" ${O}/>`,
+  down: `<path d="M12 3.6v11M7.4 10.4L12 15l4.6-4.6" fill="none" stroke="#2a1a0e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16.6v2.2a1.6 1.6 0 0 0 1.6 1.6h12.8a1.6 1.6 0 0 0 1.6-1.6v-2.2" fill="none" stroke="#2a1a0e" stroke-width="2.4" stroke-linecap="round"/>`,
+  up: `<path d="M12 15V4M7.4 8.2L12 3.6l4.6 4.6" fill="none" stroke="#2a1a0e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16.6v2.2a1.6 1.6 0 0 0 1.6 1.6h12.8a1.6 1.6 0 0 0 1.6-1.6v-2.2" fill="none" stroke="#2a1a0e" stroke-width="2.4" stroke-linecap="round"/>`,
+  trash: `<path d="M5.4 7.2h13.2l-1.2 12.4a1.6 1.6 0 0 1-1.6 1.4H8.2a1.6 1.6 0 0 1-1.6-1.4z" fill="#ff5b4f" ${O}/><path d="M3.6 7.2h16.8M9.4 7V4.4h5.2V7" fill="none" ${O}/><path d="M10 10.4v7M14 10.4v7" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>`,
+  clock: `<circle cx="12" cy="12" r="8.8" fill="#fff" ${O}/><path d="M12 7v5.4l3.4 2" fill="none" stroke="#2a1a0e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`,
 };
 const KIND = {'Mina':'pick', 'Mercado':'chart', 'Equipo':'helmet', 'Operaciones':'wrench'};
 function icon(name){ return `<svg viewBox="0 0 24 24" aria-hidden="true">${I[name] || I.star}</svg>`; }

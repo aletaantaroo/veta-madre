@@ -13,9 +13,11 @@ import { render, resizeScene, sceneDebug } from './render/scene.js';
 import { buildBiz } from './ui/biz.js';
 import { buildFin } from './ui/finance.js';
 import { fxFrame, fxResize, hudMoney } from './ui/fx.js';
+import { startGuide } from './ui/guide.js';
 import { paintIcons } from './ui/icons.js';
-import { catchUp, openMenu, renderImport, renderReset } from './ui/menu.js';
-import { buildCrew } from './ui/mine.js';
+import { secOpen } from './ui/layout.js';
+import { backup, backupTick, catchUp, openMenu, renderImport, renderReset } from './ui/menu.js';
+import { applyShop, buildCrew } from './ui/mine.js';
 
 /* ================= Veta Madre · arranque y bucle principal =================
    La lógica vive en game/, el dibujo en render/ y la interfaz en ui/. Se comunican por core/bus.js. */
@@ -35,6 +37,7 @@ import './ui/actions.js';
 import './ui/menu.js';
 import './ui/museum.js';
 import './ui/findcard.js';
+import './ui/guide.js';
 import './render/scene.js';
 import './render/charts.js';
 
@@ -48,6 +51,7 @@ function step(el){
   miningStep(el);
   findsStep(el);
   if ((saveAcc += el) > 5){ saveAcc = 0; save(); }
+  backupTick(el);
 }
 function loop(now){
   const el = Math.max(0, (now - last)/1000); last = now;
@@ -64,22 +68,24 @@ function boot(data){
   const needWarm = MK.some(m => mk(m).candles.length < 20) || STOCKS.some(d => !S.stocks[d.id]);
   if (needWarm) warmMarkets();
   if (S.migrated){
-    const lvBefore = S.level; addXp(S.earned*0.5 + S.clicks, true); delete S.migrated;
+    const lvBefore = S.level; addXp(Math.min(S.earned*0.5 + S.clicks, 3000), true); delete S.migrated;
     if (S.level > lvBefore) setTimeout(() => toast(`Tu partida pasa al sistema de niveles: empiezas en el nivel ${S.level} con ${S.sp} puntos de habilidad.`, 'lv'), 600);
   }
+  backup('boot', true);
   const awayEl = fromHot ? 0 : (Date.now() - S.saved)/1000;
   paintIcons();
-  buildCrew(); buildBiz(); buildFin(); renderReset();
+  buildCrew(); buildBiz(); buildFin(); renderReset(); applyShop();
   $('#autoSell').checked = !!S.autoSell;
   $$('#stTf button').forEach(x => x.classList.toggle('on', x.dataset.tf === S.stTf));
   new ResizeObserver(() => resizeChart()).observe($('#chartWrap'));
-  resizeScene(); fxResize(); selectDesk('sell'); showSection(S.section || 'mina');
+  resizeScene(); fxResize(); selectDesk('sell'); showSection(secOpen(S.section || 'mina') ? S.section || 'mina' : 'mina');
   document.body.classList.toggle('calm', RM); renderImport();
   if (awayEl > 10) catchUp(awayEl, true);
-  else if (!fromHot){
-    $('#awayBox').innerHTML = S.clicks ? '<span>Bienvenido de vuelta. Tu compañía te estaba esperando.</span>' : '<span><b>Tu primera mina.</b> Toca la roca (o el botón «¡Pica!») para sacar oro, véndelo y contrata a tu primer buscador en la tienda. En «Cómo se juega» tienes una guía rápida.</span>';
+  else if (!fromHot && (S.clicks || S.earned)){
+    $('#awayBox').innerHTML = '<span>Bienvenido de vuelta. Tu compañía te estaba esperando.</span>';
     $('#awayBox').hidden = false; openMenu('home');
   }
+  else if (!fromHot) startGuide();   // primera partida: nada de menús, directo a picar con el capataz al lado
   requestAnimationFrame(t => { last = t; requestAnimationFrame(loop); });
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });

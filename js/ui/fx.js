@@ -1,4 +1,4 @@
-import { on, sfx } from '../core/bus.js';
+import { emit, on, sfx } from '../core/bus.js';
 import { $, dpr, setT } from '../core/dom.js';
 import { clamp, money } from '../core/format.js';
 import { RM } from '../core/settings.js';
@@ -99,22 +99,21 @@ function bumpEl(sel){ const el = $(sel); if (!el) return; el.classList.remove('b
 function showLevel(lv, pts){
   const el = $('#lvup'), card = el.querySelector('.lvup-card');
   setT($('#lvupN'), String(lv));
-  const u = UNLOCKS.find(x => x.lv === lv);
-  setT($('#lvupTxt'), u ? `Desbloqueas: ${u.txt}` : `+${pts} punto${pts > 1 ? 's' : ''} de habilidad`);
+  const us = UNLOCKS.filter(x => x.lv === lv);
+  setT($('#lvupTxt'), us.length ? `Desbloqueas: ${us.map(u => u.txt.split(':')[0]).join(' · ')}` : `+${pts} punto${pts > 1 ? 's' : ''} de habilidad`);
   el.classList.remove('out'); el.hidden = false;
   card.style.animation = 'none'; void card.offsetWidth; card.style.animation = '';
-  sfx('lv'); confettiBurst(FW/2, FH*.45, 120, 1.3);
+  emit('celebrate'); sfx('lv'); requestAnimationFrame(() => { const a = anchorOf('#lvupN'); confettiBurst(a ? a[0] : FW/2, a ? a[1] : FH*.3, RM ? 30 : 80, 1.1); });
   const b = $('#lvlBadge'); b.classList.remove('pulse'); void b.offsetWidth; b.classList.add('pulse');
-  clearTimeout(lvHide); lvHide = setTimeout(hideLevel, 2600);
+  clearTimeout(lvHide); lvHide = setTimeout(hideLevel, 2400);
 }
 function hideLevel(){ const el = $('#lvup'); if (el.hidden) return; el.classList.add('out'); setTimeout(() => { el.hidden = true; el.classList.remove('out'); }, 340); }
 $('#lvup').addEventListener('click', hideLevel);
 
 on('levelup', showLevel);
-on('ach', () => confettiBurst(FW/2, (anchorOf('#toasts') || [0, 90])[1] + 20, 50, .8));
 on('objective', () => { const a = anchorOf('#objBar'); if (a) flyTo(a[0], a[1], '#pillMoney', 8, 'coin'); bumpEl('#objBar'); const o = $('#objBar'); if (o){ o.classList.remove('done'); void o.offsetWidth; o.classList.add('done'); } });
 on('sold', (m, rev, auto) => { if (auto) return; const n = clamp(Math.round(Math.log10(rev + 1)*2.2), 3, 14); flyTo(lastPtr[0], lastPtr[1], '#pillMoney', n, 'coin'); });
-on('fxOre', (x, y, m) => { const now = performance.now(); if (now - lastOre < 90) return; lastOre = now; flyTo(x, y, '#pillMetal', 1, 'ore', ORE[m]); });
+on('fxOre', (x, y, m) => { const now = performance.now(); if (now - lastOre < 90) return; lastOre = now; flyTo(x, y, $('#pr_' + m) && innerWidth > 860 ? '#pr_' + m : '#prodCard', 1, 'ore', ORE[m]); });
 on('fxBurst', (x, y, col) => { sparkBurst(x, y, col, 12); confettiBurst(x, y, 24, .6); });
 on('bump', bumpEl);
 on('bought', id => { const row = $('#crew_' + id); if (row){ row.classList.remove('fresh'); void row.offsetWidth; row.classList.add('fresh'); const r = row.getBoundingClientRect(); flyFrom('#pillMoney', r.right - 40, r.top + r.height/2, 4); } });

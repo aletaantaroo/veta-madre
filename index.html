@@ -31,15 +31,8 @@
       <span class="pill-ico" data-icon="coin"></span>
       <span class="pill-txt"><b id="kMoney">0 €</b><small id="kInc">0 €/s</small></span>
     </div>
-    <div class="pill pill-metal" id="pillMetal">
-      <span class="pill-ico" id="kMetalIco" data-icon="ingot"></span>
-      <span class="pill-txt"><b id="kGold">0 mg</b><span class="mini-bar" id="capBar"><i id="capFill"></i></span></span>
-    </div>
-    <button type="button" class="pill pill-price" id="pillPrice" data-go="mercado" aria-label="Ir al mercado">
-      <span class="pill-txt"><small id="kSpotLbl">Oro</small><b id="kPrice">—</b></span>
-      <span class="chg" id="kChg">—</span>
-    </button>
     <span class="legacy-chip" id="legacyChip" hidden></span>
+    <button type="button" class="round-btn bell-btn" data-act="feed" id="navFeed" aria-label="Avisos" aria-expanded="false"><span data-icon="bell"></span><span class="badge" id="bFeed" hidden>0</span></button>
     <button type="button" class="round-btn" data-act="menu" id="navMenu" aria-label="Abrir el menú (Esc)"><span data-icon="gear"></span></button>
   </header>
 
@@ -63,9 +56,24 @@
         <span class="obj-body"><span class="obj-n" id="objN">Objetivo 1/12</span><span class="obj-txt" id="objTxt">—</span></span>
         <span class="obj-r" id="objR">—</span>
       </div>
-      <div class="veins" id="veinSeg" aria-label="Veta en la que picas" title="Todas tus minas producen a la vez · aquí eliges dónde picas tú"></div>
-      <span class="chip chip-depth" id="stratum">Arenisca · 2 m</span>
-      <button type="button" class="chip chip-warn" id="opsWarn" data-go="finanzas" hidden></button>
+      <div class="prod" id="prodCard">
+        <button type="button" class="prod-head" id="prodHead" aria-expanded="true" aria-controls="prodBody">
+          <span class="prod-k">Producción</span>
+          <b class="prod-v" id="prodVal">0 €/s</b>
+          <span class="health" id="healthPill" data-h="0"><i></i><span id="healthTxt">Todo en orden</span></span>
+          <span class="prod-caret" aria-hidden="true"></span>
+        </button>
+        <div class="prod-body" id="prodBody">
+          <p class="prod-eff" id="prodEff" hidden></p>
+          <div class="prod-rows" id="prodRows" aria-label="Tus minas · toca una para picar en ella"></div>
+          <ul class="prod-issues" id="prodIssues" hidden></ul>
+          <div class="vault-row" id="vaultRow">
+            <span class="vr-ico" data-icon="safe"></span>
+            <span class="vr-txt"><b id="vaultLv">Caja fuerte</b><small id="vaultInfo">—</small></span>
+            <button type="button" class="btn btn-gold sm" data-act="buyCap" id="btnVault">Ampliar</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="dig-dock" id="digDock">
@@ -88,8 +96,9 @@
     </div>
 
     <aside class="shop" id="shop" aria-label="Tienda de la mina">
-      <button type="button" class="shop-handle" id="shopHandle" aria-expanded="false"><span data-icon="cart"></span> Tienda<span class="badge" id="shopBadge" hidden>0</span></button>
-      <div class="shop-body">
+      <button type="button" class="shop-handle" id="shopHandle" aria-expanded="false" aria-controls="shopBody" title="Abrir la tienda"><span data-icon="cart"></span><span class="sh-lbl">Tienda</span><span class="badge" id="shopBadge" hidden>0</span></button>
+      <button type="button" class="shop-x" id="shopClose" aria-label="Cerrar la tienda" title="Cerrar la tienda (la mina se ve más grande)"><span aria-hidden="true">›</span></button>
+      <div class="shop-body" id="shopBody">
         <div class="shop-head">
           <div class="tabs" role="tablist">
             <button role="tab" id="tabCrew" aria-selected="true" aria-controls="crewList" type="button">Equipo</button>
@@ -105,7 +114,6 @@
         <div class="list" id="upList" role="tabpanel" aria-labelledby="tabUp" hidden></div>
       </div>
     </aside>
-    <div class="full-warn" id="fullWarn" hidden><span data-icon="alert"></span> Almacén lleno: vende o amplía la caja fuerte</div>
     <div class="rail" id="rail" aria-label="Mapa de la mina">
       <button type="button" class="rail-btn" id="railUp" aria-label="Subir a la superficie">▲</button>
       <canvas id="railMap" role="img" aria-label="Mapa de la mina: toca para ir a esa profundidad"></canvas>
@@ -273,6 +281,10 @@
     <div class="win win-green">
       <header class="win-head"><span class="win-ico" data-icon="bank"></span><h2>Finanzas</h2><button type="button" class="win-x" data-go="mina" aria-label="Cerrar">×</button></header>
       <div class="win-body">
+        <div class="fin-health" id="finHealth" data-h="0">
+          <span class="fh-light" aria-hidden="true"><i></i><i></i><i></i></span>
+          <div class="fh-body"><b id="fhTitle">Todo en orden</b><span class="fh-sub" id="fhSub">—</span><ul class="fh-list" id="fhList"></ul></div>
+        </div>
         <div class="fin-grid">
           <div class="panel">
             <div class="panel-head"><h3>Cuentas</h3><span class="meta">Estimación con los precios de ahora</span></div>
@@ -449,6 +461,17 @@
 
 <canvas id="fx" aria-hidden="true"></canvas>
 <div id="toasts" aria-live="polite"></div>
+<div class="feed-panel" id="feedPanel" role="dialog" aria-labelledby="feedTitle" hidden>
+  <header><span data-icon="bell"></span><h2 id="feedTitle">Avisos</h2><button type="button" class="btn sm btn-plain" id="feedClear">Vaciar</button><button type="button" class="win-x sm" id="feedX" aria-label="Cerrar">×</button></header>
+  <ol class="feed-list" id="feedList"></ol>
+</div>
+
+<div class="coach" id="guide" role="status" aria-live="polite" hidden>
+  <canvas class="coach-face" id="guideFace" width="104" height="104" aria-hidden="true"></canvas>
+  <div class="coach-txt"><b id="guideT">¡Bienvenido a Veta Madre!</b><span id="guideS">Haz tu primer clic para empezar.</span></div>
+  <button type="button" class="coach-skip" id="guideSkip">Ya sé jugar</button>
+</div>
+<div class="coach-arrow" id="guideArrow" data-dir="down" aria-hidden="true" hidden><svg viewBox="0 0 64 64"><path d="M24 6h16v26h12L32 58 12 32h12z" fill="#ffc62e" stroke="#2a1a0e" stroke-width="4" stroke-linejoin="round"/><path d="M29 11v19" stroke="#fff6c8" stroke-width="4" stroke-linecap="round"/></svg></div>
 
 <div class="lvup" id="lvup" hidden>
   <div class="lvup-rays"></div>
@@ -492,9 +515,10 @@
       <button type="button" class="win-x" data-act="resume" id="btnMenuX" aria-label="Cerrar el menú (Esc)">×</button>
     </div>
     <div class="menu-tabs" role="tablist">
-      <button type="button" role="tab" data-mtab="home" id="mtHome" aria-selected="true">Inicio</button>
-      <button type="button" role="tab" data-mtab="set" id="mtSet" aria-selected="false">Ajustes</button>
-      <button type="button" role="tab" data-mtab="help" id="mtHelp" aria-selected="false">Cómo se juega</button>
+      <button type="button" role="tab" data-mtab="home" id="mtHome" aria-selected="true" class="mt-gold"><span data-icon="pick"></span>Inicio</button>
+      <button type="button" role="tab" data-mtab="set" id="mtSet" aria-selected="false" class="mt-blue"><span data-icon="gear"></span>Ajustes</button>
+      <button type="button" role="tab" data-mtab="save" id="mtSave" aria-selected="false" class="mt-green"><span data-icon="disk"></span>Partida</button>
+      <button type="button" role="tab" data-mtab="help" id="mtHelp" aria-selected="false" class="mt-purple"><span data-icon="book"></span>Cómo se juega</button>
     </div>
 
     <div id="mHome" class="menu-pane">
@@ -511,25 +535,43 @@
     </div>
 
     <div id="mSet" class="menu-pane" hidden>
-      <div class="set-grid">
-        <div class="set-col">
-          <h3 class="sub-h">Preferencias</h3>
-          <div class="set-item"><b>Sonido</b><div class="seg" id="setSound"><button type="button" data-v="on">Activado</button><button type="button" data-v="off">Desactivado</button></div></div>
-          <div class="set-item"><b>Animaciones</b><div class="seg" id="setMotion"><button type="button" data-v="full">Completas</button><button type="button" data-v="calm">Reducidas</button></div></div>
-          <div class="set-item"><b>Tutoriales</b><div class="seg" id="setTuts"><button type="button" data-v="on">Activados</button><button type="button" data-v="off">Desactivados</button></div><span>Una tarjeta corta cada vez que desbloqueas algo. <button type="button" class="btn sm btn-plain" data-act="tutReset" id="btnTutReset">Volver a verlos</button></span></div>
-          <div class="set-item"><b>Avisos emergentes</b><div class="seg" id="setToasts"><button type="button" data-v="all">Todos</button><button type="button" data-v="imp">Importantes</button><button type="button" data-v="none">Ninguno</button></div><span>«Importantes» deja solo niveles, logros y problemas.</span></div>
-        </div>
-        <div class="set-col">
-          <h3 class="sub-h">Partida</h3>
-          <div class="set-item"><b>Ingresos en inactivo</b><span>Al volver cuenta hasta 1 hora de trabajo. Lo demás se pierde.</span></div>
-          <details class="set-item"><summary><b>Copia de seguridad</b></summary>
-            <span class="info">Genera un código para guardar tu partida o llevarla a otro navegador. Pega un código y pulsa «Cargar» para recuperarla.</span>
-            <textarea class="code" id="saveCode" spellcheck="false" aria-label="Código de la partida" placeholder="Aquí aparece el código, o pega uno para cargarlo"></textarea>
-            <div class="acts"><button type="button" class="btn sm btn-blue" data-act="exportSave" id="btnExport">Generar y copiar</button><span class="confirm" id="importBox"></span></div>
-            <p class="form-err" id="importErr" hidden></p>
-          </details>
-          <div class="set-item"><b>Borrar partida</b><span>Se pierde todo, también logros y legado.</span><div class="confirm" id="resetBox"></div></div>
-        </div>
+      <div class="opt-grid">
+        <div class="opt c-blue"><span class="opt-ico" data-icon="sound"></span><div class="opt-txt"><b>Sonido</b><span>Golpes, monedas y fanfarrias.</span></div>
+          <button type="button" class="switch" id="setSound" data-k="sound" role="switch" aria-checked="true" aria-label="Sonido"><i></i></button></div>
+        <div class="opt c-purple"><span class="opt-ico" data-icon="motion"></span><div class="opt-txt"><b>Animaciones</b><span>Confeti, temblores y brillos. Redúcelas si te marean.</span></div>
+          <div class="seg chunky" id="setMotion"><button type="button" data-v="full">Completas</button><button type="button" data-v="calm">Reducidas</button></div></div>
+        <div class="opt c-green"><span class="opt-ico" data-icon="book"></span><div class="opt-txt"><b>Tutoriales</b><span>El capataz te explica cada cosa nueva. <button type="button" class="linkish" data-act="tutReset" id="btnTutReset">Volver a verlos</button></span></div>
+          <button type="button" class="switch" id="setTuts" data-k="tuts" role="switch" aria-checked="true" aria-label="Tutoriales"><i></i></button></div>
+        <div class="opt c-gold"><span class="opt-ico" data-icon="bell"></span><div class="opt-txt"><b>Avisos en pantalla</b><span>Todos quedan en la campana; aquí eliges cuáles aparecen al vuelo.</span></div>
+          <div class="seg chunky" id="setToasts"><button type="button" data-v="all">Todos</button><button type="button" data-v="imp">Importantes</button><button type="button" data-v="none">Ninguno</button></div></div>
+      </div>
+    </div>
+
+    <div id="mSave" class="menu-pane" hidden>
+      <div class="save-top">
+        <span class="save-ico" data-icon="disk"></span>
+        <div class="opt-txt"><b>Guardado automático</b><span id="saveStatus">Tu partida se guarda sola en este navegador.</span></div>
+        <button type="button" class="btn sm btn-green" data-act="saveNow" id="btnSaveNow">Guardar ya</button>
+      </div>
+      <h3 class="sub-h">Copias de seguridad automáticas</h3>
+      <p class="fine">Si algo sale mal (un borrado, un error, una mala racha), vuelve a una de estas copias. Se hacen solas.</p>
+      <div class="bk-list" id="bkList"></div>
+      <h3 class="sub-h">Llevar la partida a otro sitio</h3>
+      <div class="file-acts">
+        <button type="button" class="btn btn-blue" data-act="exportFile" id="btnExportFile"><span data-icon="down"></span>Descargar partida</button>
+        <label class="btn btn-gold file-btn" id="btnImportFile"><span data-icon="up"></span>Cargar desde archivo<input type="file" id="importFile" accept=".json,.txt,application/json,text/plain"></label>
+      </div>
+      <div class="confirm-box" id="importBox" hidden></div>
+      <p class="form-err" id="importErr" hidden></p>
+      <details class="code-box"><summary>Usar un código de texto</summary>
+        <span class="info">Genera un código para copiarlo, o pega uno y pulsa «Cargar código».</span>
+        <textarea class="code" id="saveCode" spellcheck="false" aria-label="Código de la partida" placeholder="Aquí aparece el código, o pega uno para cargarlo"></textarea>
+        <div class="acts"><button type="button" class="btn sm btn-blue" data-act="exportSave" id="btnExport">Generar y copiar</button><button type="button" class="btn sm btn-gold" data-act="importCode" id="btnImport">Cargar código</button></div>
+      </details>
+      <div class="danger-zone">
+        <span class="save-ico" data-icon="trash"></span>
+        <div class="opt-txt"><b>Borrar partida</b><span>Se pierde todo, también logros, museo y legado. Las copias de seguridad se conservan.</span></div>
+        <div class="confirm" id="resetBox"></div>
       </div>
     </div>
 
@@ -538,20 +580,20 @@
         <ul><li><b>Pica</b> la roca y contrata <b>equipo</b> para que extraiga solo. Sigue los <b>objetivos</b> si no sabes por dónde seguir.</li>
         <li>El metal va al <b>almacén</b>; si se llena, la mina para. Vende cuando el precio esté alto, y mejor por partes.</li></ul></div>
       <div><h3>Crecer</h3>
-        <ul><li>La <b>experiencia</b> sale sobre todo de lo que haces tú: picar, vender a mano, contratos, trading e invertir. Lo pasivo da muy poca.</li>
-        <li>Cada nivel da puntos de <b>habilidad</b> y desbloquea cosas nuevas.</li></ul></div>
+        <ul><li>La <b>experiencia</b> sale de vender a mano, cumplir contratos y objetivos, logros y hallazgos. Lo pasivo da muy poca.</li>
+        <li>Cada nivel da puntos de <b>habilidad</b> y desbloquea algo: las secciones de abajo aparecen poco a poco, sin agobios.</li></ul></div>
       <div><h3>El dinero</h3>
-        <ul><li>Pagas <b>nóminas</b> cada minuto; sin caja baja la moral y puede haber huelga.</li>
+        <ul><li>Pagas <b>nóminas</b> cada minuto; si no llegas, baja la moral y puede haber <b>huelga</b>: verás a tu gente con pancartas y la mina irá al 35 %.</li>
         <li>Las máquinas gastan <b>energía</b>, <b>combustible</b> y <b>explosivos</b>. Puedes comprarlos o <b>producirlos</b>: paneles, aerogeneradores, planta de biodiésel y fábrica de explosivos.</li></ul></div>
       <div><h3>El mercado</h3>
         <ul><li>Los precios se mueven con noticias, datos económicos y la mina rival.</li>
         <li><b>Contratos</b> pagan más; <b>órdenes</b> venden solas; el <b>trading</b> multiplica ganancias y pérdidas.</li></ul></div>
       <div><h3>El imperio</h3>
         <ul><li><b>Empresas</b> que trabajan solas y <b>bolsa</b> para invertir o sacar tus empresas a cotizar.</li>
-        <li>En el nivel 20 puedes <b>vender la compañía</b>: ganas lingotes para la <b>tienda de legado</b>.</li></ul></div>
+        <li>En el nivel 22 puedes <b>vender la compañía</b>: ganas lingotes para la <b>tienda de legado</b>.</li></ul></div>
       <div><h3>Atajos</h3>
         <ul><li><b>Espacio</b> pica · <b>Esc</b> abre este menú · <b>1–8</b> cambian de sección · <b>flechas</b> suben y bajan por la mina.</li>
-        <li>Si el beneficio sale en rojo, mira Finanzas: casi siempre es un almacén lleno o falta de energía.</li></ul></div>
+        <li>Si el panel de <b>producción</b> se pone amarillo o rojo, tócalo: te dice qué va mal y cómo arreglarlo. Los avisos quedan en la <b>campana</b>.</li></ul></div>
     </div>
   </div>
 </div>
