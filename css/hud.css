@@ -55,7 +55,7 @@
 .gem .d-lbl{font:400 11px/1 var(--display);color:#fff;text-shadow:var(--outline-sm);margin-top:3px;letter-spacing:.02em;white-space:nowrap}
 .gem[aria-current="page"]{transform:translateY(-8px) scale(1.06);box-shadow:0 5px 0 var(--ink),0 0 0 4px #fff,0 0 22px 6px color-mix(in srgb,var(--c) 70%,transparent)}
 .gem-gold{--c:var(--gold);--c2:var(--gold-2)} .gem-blue{--c:var(--blue);--c2:var(--blue-2)} .gem-green{--c:var(--green);--c2:var(--green-2)}
-.gem-orange{--c:var(--orange);--c2:var(--orange-2)} .gem-cyan{--c:var(--cyan);--c2:var(--cyan-2)} .gem-purple{--c:var(--purple);--c2:var(--purple-2)} .gem-red{--c:var(--red);--c2:var(--red-2)}
+.gem-orange{--c:var(--orange);--c2:var(--orange-2)} .gem-pink{--c:var(--pink);--c2:var(--pink-2)} .gem-cyan{--c:var(--cyan);--c2:var(--cyan-2)} .gem-purple{--c:var(--purple);--c2:var(--purple-2)} .gem-red{--c:var(--red);--c2:var(--red-2)}
 .gem:has(.lock){--c:#b9ad9b;--c2:#857866}
 .gem:has(.lock) .d-ico{opacity:.55}
 .gem .lock{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);font-size:10.5px;border:2px solid var(--ink);background:var(--paper);color:var(--ink);padding:0 6px 0 4px;line-height:15px}

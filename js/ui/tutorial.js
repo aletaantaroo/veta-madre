@@ -1,4 +1,4 @@
-import { on, selectDesk, sfx, showSection } from '../core/bus.js';
+import { emit, on, selectDesk, sfx, showSection } from '../core/bus.js';
 import { $, setT } from '../core/dom.js';
 import { SET } from '../core/settings.js';
 import { TUTS } from '../data/content.js';
@@ -23,7 +23,7 @@ export function showNextTut(){
 }
 export function closeTut(go){
   const T = TUTS[tutCur]; tutCur = null; $('#tut').hidden = true; document.body.classList.remove('tut-open');
-  if (go && T){ if (S.section !== T.sec) showSection(T.sec); if (T.desk) selectDesk(T.desk); }
+  if (go && T){ if (S.section !== T.sec) showSection(T.sec); if (T.desk) selectDesk(T.desk); if (T.mg) emit('mgOpen', T.mg); }
   setTimeout(showNextTut, 400);
 }
 

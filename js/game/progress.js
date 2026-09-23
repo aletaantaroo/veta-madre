@@ -33,7 +33,7 @@ export function addXp(v, quiet){
 }
 /* La experiencia por dinero se mide en «segundos de producción»: vender lo que tu mina saca en un minuto
    da la misma experiencia al principio que al final, así que el ritmo de niveles no se dispara con la economía. */
-function refIncome(){
+export function refIncome(){
   const pas = openedMk().reduce((a, m) => a + gps(m)*physPrice(m), 0) + bizTotal();
   return Math.max(pas, clickEq()*mk('au').price*2, 0.05);
 }

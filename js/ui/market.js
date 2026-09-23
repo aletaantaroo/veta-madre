@@ -10,8 +10,9 @@ import { metalSegHtml } from './layout.js';
 
 /* ---- mercado ---- */
 export let desk = 'sell';
-const DESKS = {sell:'#pSell', trade:'#pTrade', con:'#pCon', ord:'#pOrd', log:'#pLog'};
+const DESKS = {sell:'#pSell', con:'#pCon', ord:'#pOrd', log:'#pLog'};
 function openDesk(k){
+  if (!DESKS[k]) k = 'sell';
   desk = k;
   $$('#deskTabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.desk === k)));
   Object.entries(DESKS).forEach(([key, sel]) => { $(sel).hidden = key !== k; });
@@ -76,8 +77,7 @@ function posItem(p){
 function updateDesk(){
   const m = S.mm, M = METALS[m];
   const lockTxt = (btn, locked) => { let s = btn.querySelector('.lock'); if (locked && !s){ s = document.createElement('span'); s.className='lock'; s.setAttribute('aria-label','bloqueado'); btn.appendChild(s); } if (!locked && s) s.remove(); };
-  lockTxt($('#dtTrade'), !has('u_broker')); lockTxt($('#dtOrd'), !has('u_agente')); lockTxt($('#dtCon'), !unl('contracts'));
-  const bt = $('#bTrade'); bt.hidden = !S.positions.length; setT(bt, String(S.positions.length));
+  lockTxt($('#dtOrd'), !has('u_agente')); lockTxt($('#dtCon'), !unl('contracts'));
   const bc = $('#bCon'); bc.hidden = !S.offers.length; setT(bc, String(S.offers.length));
   const bo = $('#bOrd'); bo.hidden = !S.orders.length; setT(bo, String(S.orders.length));
   if (desk === 'sell'){
@@ -92,20 +92,6 @@ function updateDesk(){
     setT($('#capLvl'), String(S.cap+1));
     setT($('#capDesc'), MK.filter(x => S.opened[x]).map(x => `${METALS[x].name} ${weight(cap(x))}`).join(' · '));
     const cc = capCost(S.cap), bcap = $('#btnCap'); setT(bcap, `Ampliar ×3 · ${money(cc)}`); bcap.classList.toggle('cant', S.money < cc);
-  }
-  if (desk === 'trade'){
-    const on = has('u_broker'); $('#trLocked').hidden = on; $('#trBody').hidden = !on;
-    if (on){
-      const used = S.positions.reduce((a,p)=>a+p.margin,0), open = S.positions.reduce((a,p)=>a+posPnl(p),0);
-      setT($('#trMargin'), money(used));
-      const to = $('#trOpen'); setT(to, S.positions.length ? smoney(open) : '—'); to.className = 'val ' + (S.positions.length ? (open>=0?'t-up':'t-down') : '');
-      const tr = $('#trReal'); setT(tr, S.trades ? smoney(S.pnlReal) : '—'); tr.className = 'val ' + (S.trades ? (S.pnlReal>=0?'t-up':'t-down') : '');
-      setT($('#bid'), pfmt(m, bid(m))); setT($('#ask'), pfmt(m, ask(m))); setT($('#spreadTxt'), `Diferencial ${nf1.format(spread()*100)} %`);
-      updateTradeForm();
-      const key = 'k' + S.positions.map(p=>p.id).join(','), list = $('#posList');
-      if (key !== K.pos){ K.pos = key; list.innerHTML = S.positions.length ? S.positions.map(posItem).join('') : '<p class="empty">No tienes posiciones abiertas.</p>'; }
-      else S.positions.forEach(p => { const el = list.querySelector(`[data-pid="${p.id}"] [data-r=pnl]`); if (!el) return; const pnl = posPnl(p); setT(el, `${smoney(pnl)} (${nf1.format(pnl/p.margin*100)} %)`); el.className = 'pnl ' + (pnl>=0?'t-up':'t-down'); });
-    }
   }
   if (desk === 'con') updateJobsMarket();
   if (desk === 'ord'){
@@ -126,3 +112,20 @@ function updateDesk(){
 }
 on('desk', openDesk);
 on('ticker', (txt, tone, sel) => { const t = $(sel || '#ticker'); if (!t) return; t.textContent = txt; t.dataset.tone = tone || ''; t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash'); });
+
+/* ---- trading (ahora vive en Minijuegos) ---- */
+export function updateTrading(){
+  const m = S.mm;
+    const on = has('u_broker'); $('#trLocked').hidden = on; $('#trBody').hidden = !on;
+    if (on){
+      const used = S.positions.reduce((a,p)=>a+p.margin,0), open = S.positions.reduce((a,p)=>a+posPnl(p),0);
+      setT($('#trMargin'), money(used));
+      const to = $('#trOpen'); setT(to, S.positions.length ? smoney(open) : '—'); to.className = 'val ' + (S.positions.length ? (open>=0?'t-up':'t-down') : '');
+      const tr = $('#trReal'); setT(tr, S.trades ? smoney(S.pnlReal) : '—'); tr.className = 'val ' + (S.trades ? (S.pnlReal>=0?'t-up':'t-down') : '');
+      setT($('#bid'), pfmt(m, bid(m))); setT($('#ask'), pfmt(m, ask(m))); setT($('#spreadTxt'), `Diferencial ${nf1.format(spread()*100)} %`);
+      updateTradeForm();
+      const key = 'k' + S.positions.map(p=>p.id).join(','), list = $('#posList');
+      if (key !== K.pos){ K.pos = key; list.innerHTML = S.positions.length ? S.positions.map(posItem).join('') : '<p class="empty">No tienes posiciones abiertas.</p>'; }
+      else S.positions.forEach(p => { const el = list.querySelector(`[data-pid="${p.id}"] [data-r=pnl]`); if (!el) return; const pnl = posPnl(p); setT(el, `${smoney(pnl)} (${nf1.format(pnl/p.margin*100)} %)`); el.className = 'pnl ' + (pnl>=0?'t-up':'t-down'); });
+    }
+  }

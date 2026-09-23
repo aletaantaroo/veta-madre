@@ -47,6 +47,7 @@
     <button type="button" data-sec="finanzas" id="navFin" class="gem gem-green"><span class="d-ico" data-icon="bank"></span><span class="d-lbl">Finanzas</span><span class="badge warn" id="bNavFin" hidden>!</span></button>
     <button type="button" data-sec="empresas" id="navEmpresas" class="gem gem-orange"><span class="d-ico" data-icon="factory"></span><span class="d-lbl">Empresas</span></button>
     <button type="button" data-sec="bolsa" id="navBolsa" class="gem gem-cyan"><span class="d-ico" data-icon="bull"></span><span class="d-lbl">Bolsa</span></button>
+    <button type="button" data-sec="minijuegos" id="navMg" class="gem gem-pink"><span class="d-ico" data-icon="dice"></span><span class="d-lbl">Minijuegos</span><span class="badge" id="bNavMg" hidden>0</span></button>
     <button type="button" data-sec="habilidades" id="navHab" class="gem gem-purple"><span class="d-ico" data-icon="star"></span><span class="d-lbl">Habilidades</span><span class="badge" id="bNavSp" hidden>0</span></button>
     <button type="button" data-sec="museo" id="navMuseo" class="gem gem-sand"><span class="d-ico" data-icon="museum"></span><span class="d-lbl">Museo</span><span class="badge" id="bNavMu" hidden>0</span></button>
     <button type="button" data-sec="logros" id="navLogros" class="gem gem-red"><span class="d-ico" data-icon="trophy"></span><span class="d-lbl">Logros</span></button>
@@ -127,6 +128,94 @@
     </div>
   </section>
 
+  <!-- ================= MINIJUEGOS ================= -->
+  <section class="sec win-wrap" id="sec-minijuegos" hidden>
+    <div class="win win-pink">
+      <header class="win-head"><span class="win-ico" data-icon="dice"></span><h2>Minijuegos</h2><span class="win-meta" id="mgMeta">—</span><button type="button" class="win-x" data-go="mina" aria-label="Cerrar">×</button></header>
+      <div class="win-body">
+        <div class="mg-menu" id="mgMenu">
+          <p class="info mg-intro">Un respiro entre turno y turno. La <b>vagoneta</b> y la <b>voladura</b> gastan una ficha (tienes 3 al día y se recargan a medianoche) y pagan según lo que produce tu mina. La <b>apuesta</b> y el <b>trading</b> se juegan con tu caja.</p>
+          <div class="mg-cards" id="mgCards"></div>
+        </div>
+
+        <div class="mg-view" id="mgBet" hidden>
+          <div class="mg-top"><button type="button" class="btn sm btn-plain" data-mg-back>← Volver</button><h3>Sube o baja</h3><span class="meta" id="betMeta">—</span></div>
+          <div class="bet-grid">
+            <div class="panel">
+              <div class="seg metal" id="betSeg" aria-label="Metal"></div>
+              <div class="bet-price"><span id="betName">Oro</span><b id="betPrice">—</b><span class="chg" id="betChg">—</span></div>
+              <div class="monitor"><div class="chart-wrap short"><canvas id="betChart" role="img" aria-label="Precio de los últimos segundos"></canvas></div></div>
+              <p class="fine">Aciertas si al acabar el tiempo el precio está por encima (sube) o por debajo (baja) del de ahora. Si aciertas cobras 1,9 veces lo apostado.</p>
+            </div>
+            <div class="panel">
+              <div class="field"><label for="betStake">Apuesta (€)</label><input id="betStake" type="number" min="0" step="any" inputmode="decimal"><div class="presets" id="betPresets"><button type="button" data-f="0.01">1 %</button><button type="button" data-f="0.05">5 %</button><button type="button" data-f="0.1">10 %</button><button type="button" data-f="max">Máx</button></div><span class="fine" id="betCap">—</span></div>
+              <div class="field"><span class="flabel">Tiempo</span><div class="seg" id="betDur"><button type="button" data-d="10" class="on">10 s</button><button type="button" data-d="30">30 s</button><button type="button" data-d="60">1 min</button></div></div>
+              <div class="bet-btns"><button type="button" class="btn btn-green big" id="betUp">▲ Sube</button><button type="button" class="btn btn-red big" id="betDown">▼ Baja</button></div>
+              <div class="bet-live" id="betLive" hidden></div>
+              <p class="form-err" id="betErr" hidden></p>
+              <h3 class="sub-h">Últimas apuestas</h3>
+              <ol class="bet-hist" id="betHist"></ol>
+            </div>
+          </div>
+        </div>
+
+        <div class="mg-view" id="mgCart" hidden>
+          <div class="mg-top"><button type="button" class="btn sm btn-plain" data-mg-back>← Volver</button><h3>Vagoneta desbocada</h3><span class="meta" id="cartMeta">—</span></div>
+          <div class="arcade" id="cartBox"><canvas id="cartCv" tabindex="0" aria-label="Vagoneta desbocada: toca o pulsa espacio para saltar"></canvas><div class="arcade-ov" id="cartOv"></div></div>
+          <p class="fine">Toca la pantalla, pulsa <b>espacio</b> o <b>↑</b> para saltar. Esquiva rocas y agujeros y coge todas las pepitas que puedas en 40 segundos.</p>
+        </div>
+
+        <div class="mg-view" id="mgBlast" hidden>
+          <div class="mg-top"><button type="button" class="btn sm btn-plain" data-mg-back>← Volver</button><h3>Voladura</h3><span class="meta" id="blastMeta">—</span></div>
+          <div class="arcade" id="blastBox"><canvas id="blastCv" tabindex="0" aria-label="Voladura: detona cuando la aguja esté en la zona verde"></canvas><div class="arcade-ov" id="blastOv"></div></div>
+          <div class="blast-acts"><button type="button" class="btn btn-red big" id="blastBtn" disabled>¡Detonar!</button></div>
+          <p class="fine">Cinco cargas. Detona cuando la aguja pase por la zona <b>verde</b>: perfecta vale el doble y las perfectas seguidas suman combo. En la roja, la carga se pierde.</p>
+        </div>
+
+        <div class="mg-view" id="mgTrade" hidden>
+          <div class="mg-top"><button type="button" class="btn sm btn-plain" data-mg-back>← Volver</button><h3>Trading con apalancamiento</h3><span class="meta" id="trMeta">—</span></div>
+          <div class="trade-grid">
+            <div class="panel">
+              <div class="seg metal" id="trSeg" aria-label="Metal"></div>
+              <div class="bet-price"><span id="trName">Oro</span><b id="trPriceBig">—</b></div>
+              <div class="monitor"><div class="chart-wrap short"><canvas id="trChart" role="img" aria-label="Precio de los últimos minutos"></canvas></div></div>
+            </div>
+            <div class="panel" id="pTrade">
+              <p class="locked" id="trLocked">A partir del <b>nivel 10</b>, compra la mejora <b>Cuenta en un bróker</b> (Tienda → Mejoras → Mercado) para operar en largo y en corto con apalancamiento, sin tocar tu almacén.</p>
+              <div class="desk-panel" id="trBody">
+                <div class="sum-grid">
+                  <div><span class="lbl">Margen en uso</span><span class="val" id="trMargin">0 €</span></div>
+                  <div><span class="lbl">Resultado abierto</span><span class="val" id="trOpen">0 €</span></div>
+                  <div><span class="lbl">Resultado cerrado</span><span class="val" id="trReal">0 €</span></div>
+                </div>
+                <div class="quote-row"><span>Venta (bid) <b id="bid">—</b></span><span>Compra (ask) <b id="ask">—</b></span><span id="spreadTxt">Diferencial 0,4 %</span></div>
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="tMargin">Inversión (margen, €)</label>
+                    <input id="tMargin" type="number" min="0" step="any" inputmode="decimal" placeholder="0">
+                    <div class="presets" id="tPresets"><button type="button" data-pct="0.1">10 %</button><button type="button" data-pct="0.25">25 %</button><button type="button" data-pct="0.5">50 %</button><button type="button" data-pct="1">Todo</button></div>
+                  </div>
+                  <div class="field">
+                    <span class="flabel">Apalancamiento</span>
+                    <div class="seg" id="levSeg"><button type="button" data-lev="1" id="lev1">1:1</button><button type="button" data-lev="5" id="lev5" class="on">1:5</button><button type="button" data-lev="20" id="lev20">1:20</button><button type="button" data-lev="50" id="lev50">1:50</button></div>
+                  </div>
+                  <div class="field"><label for="tSL" id="tSLl">Stop loss (opcional)</label><input id="tSL" type="number" step="any" inputmode="decimal"></div>
+                  <div class="field"><label for="tTP" id="tTPl">Take profit (opcional)</label><input id="tTP" type="number" step="any" inputmode="decimal"></div>
+                </div>
+                <p class="preview" id="trPreview">—</p>
+                <p class="form-err" id="trErr" hidden></p>
+                <div class="two"><button class="btn btn-green" type="button" id="btnLong">Comprar · largo</button><button class="btn btn-red" type="button" id="btnShort">Vender · corto</button></div>
+                <h3 class="sub-h">Posiciones abiertas</h3>
+                <div class="items" id="posList"></div>
+                <p class="fine">Largo gana si el precio sube; corto gana si baja. Con apalancamiento las pérdidas también se multiplican: si una posición pierde todo su margen, se cierra sola.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ================= MUSEO ================= -->
   <section class="sec win-wrap" id="sec-museo" hidden>
     <div class="win win-sand">
@@ -193,7 +282,6 @@
           <div class="mk-desk">
             <div class="desk-tabs" role="tablist" id="deskTabs">
               <button type="button" role="tab" data-desk="sell" id="dtSell" aria-selected="true">Vender</button>
-              <button type="button" role="tab" data-desk="trade" id="dtTrade" aria-selected="false">Trading<span class="badge" id="bTrade" hidden>0</span></button>
               <button type="button" role="tab" data-desk="con" id="dtCon" aria-selected="false">Encargos<span class="badge" id="bCon" hidden>0</span></button>
               <button type="button" role="tab" data-desk="ord" id="dtOrd" aria-selected="false">Órdenes<span class="badge" id="bOrd" hidden>0</span></button>
               <button type="button" role="tab" data-desk="log" id="dtLog" aria-selected="false">Historial</button>
@@ -212,37 +300,6 @@
                 <span class="vault-ico" data-icon="safe"></span>
                 <div><span class="v-name">Caja fuerte · nivel <span id="capLvl">1</span></span><span class="v-desc" id="capDesc">—</span></div>
                 <button class="btn btn-green" type="button" id="btnCap">Ampliar</button>
-              </div>
-            </div>
-
-            <div class="desk-panel" id="pTrade" role="tabpanel" hidden>
-              <p class="locked" id="trLocked">Compra la mejora <b>Cuenta en un bróker</b> (pestaña Mejoras de la tienda de la mina) para operar en largo y en corto con apalancamiento, sin tocar tu almacén.</p>
-              <div class="desk-panel" id="trBody">
-                <div class="sum-grid">
-                  <div><span class="lbl">Margen en uso</span><span class="val" id="trMargin">0 €</span></div>
-                  <div><span class="lbl">Resultado abierto</span><span class="val" id="trOpen">0 €</span></div>
-                  <div><span class="lbl">Resultado cerrado</span><span class="val" id="trReal">0 €</span></div>
-                </div>
-                <div class="quote-row"><span>Venta (bid) <b id="bid">—</b></span><span>Compra (ask) <b id="ask">—</b></span><span id="spreadTxt">Diferencial 0,4 %</span></div>
-                <div class="form-grid">
-                  <div class="field">
-                    <label for="tMargin">Inversión (margen, €)</label>
-                    <input id="tMargin" type="number" min="0" step="any" inputmode="decimal" placeholder="0">
-                    <div class="presets" id="tPresets"><button type="button" data-pct="0.1">10 %</button><button type="button" data-pct="0.25">25 %</button><button type="button" data-pct="0.5">50 %</button><button type="button" data-pct="1">Todo</button></div>
-                  </div>
-                  <div class="field">
-                    <span class="flabel">Apalancamiento</span>
-                    <div class="seg" id="levSeg"><button type="button" data-lev="1" id="lev1">1:1</button><button type="button" data-lev="5" id="lev5" class="on">1:5</button><button type="button" data-lev="20" id="lev20">1:20</button><button type="button" data-lev="50" id="lev50">1:50</button></div>
-                  </div>
-                  <div class="field"><label for="tSL" id="tSLl">Stop loss (opcional)</label><input id="tSL" type="number" step="any" inputmode="decimal"></div>
-                  <div class="field"><label for="tTP" id="tTPl">Take profit (opcional)</label><input id="tTP" type="number" step="any" inputmode="decimal"></div>
-                </div>
-                <p class="preview" id="trPreview">—</p>
-                <p class="form-err" id="trErr" hidden></p>
-                <div class="two"><button class="btn btn-green" type="button" id="btnLong">Comprar · largo</button><button class="btn btn-red" type="button" id="btnShort">Vender · corto</button></div>
-                <h3 class="sub-h">Posiciones abiertas</h3>
-                <div class="items" id="posList"></div>
-                <p class="fine">Largo gana si el precio sube; corto gana si baja. Con apalancamiento las pérdidas también se multiplican: si una posición pierde todo su margen, se cierra sola.</p>
               </div>
             </div>
 

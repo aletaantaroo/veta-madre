@@ -38,6 +38,7 @@ import './ui/menu.js';
 import './ui/museum.js';
 import './ui/findcard.js';
 import './ui/guide.js';
+import './ui/minigames.js';
 import './render/scene.js';
 import './render/charts.js';
 

@@ -14,16 +14,17 @@ import { icon } from './icons.js';
 import { updateMarket } from './market.js';
 import { closeMenu, menuOpen, menuTab, openMenu, updateMenuHome } from './menu.js';
 import { pressDig, updateMine } from './mine.js';
+import { updateMinigames } from './minigames.js';
 import { updateMuseo } from './museum.js';
 import { updateTree } from './skills.js';
 import { updateStocks } from './stocks.js';
 import { showNextTut, tutCur, tutQ } from './tutorial.js';
 
 /* ================= interfaz: HUD, dock y ventanas ================= */
-const SECTIONS = ['mina', 'mercado', 'finanzas', 'empresas', 'bolsa', 'habilidades', 'museo', 'logros'];
+const SECTIONS = ['mina', 'mercado', 'finanzas', 'empresas', 'bolsa', 'minijuegos', 'habilidades', 'museo', 'logros'];
 
 /* Qué desbloquea cada sección del dock. La mina siempre está; el museo, en cuanto tienes un hallazgo. */
-const SEC_KEY = {mercado: 'mercado', finanzas: 'finanzas', empresas: 'biz', bolsa: 'stocks', habilidades: 'habilidades', logros: 'logros'};
+const SEC_KEY = {mercado: 'mercado', finanzas: 'finanzas', empresas: 'biz', bolsa: 'stocks', minijuegos: 'minigames', habilidades: 'habilidades', logros: 'logros'};
 export function secOpen(k){ return k === 'mina' || (k === 'museo' ? findCount() > 0 : unl(SEC_KEY[k])); }
 function nextLocked(){
   let best = null;
@@ -105,6 +106,7 @@ function renderUI(){
   const lc = $('#legacyChip'); lc.hidden = !S.legacy; setT(lc, `Legado ${S.legacy} · +${legAvail()*5} %`);
   const H = health(), bf = $('#bNavFin'); bf.hidden = !H.lv || !secOpen('finanzas'); bf.classList.toggle('bad', H.lv > 1);
   const newF = findCount() - (S.museoSeen || 0), bmu = $('#bNavMu'); bmu.hidden = newF <= 0 || S.section === 'museo'; setT(bmu, String(newF));
+  const bg = $('#bNavMg'), tk = S.mg ? S.mg.tk : 3; bg.hidden = !tk || !secOpen('minijuegos') || S.section === 'minijuegos'; setT(bg, String(tk));
   const bm = $('#bNavMk'); const pend = S.offers.length; bm.hidden = !pend; setT(bm, String(pend));
   updateNav();
   switch (S.section){
@@ -116,6 +118,7 @@ function renderUI(){
     case 'logros': updateAch(); break;
     case 'finanzas': updateFin(); break;
     case 'museo': updateMuseo(); break;
+    case 'minijuegos': updateMinigames(); break;
   }
   if (S.section === 'logros'){
     setT($('#sMined'), weight(S.mined)); setT($('#sEarned'), money(S.earned)); setT($('#sAll'), money(S.allEarned));
@@ -130,7 +133,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape'){ e.preventDefault(); if (menuOpen()) closeMenu(); else if (S.section !== 'mina') showSection('mina'); else openMenu(); return; }
   const tg = e.target, typing = tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT');
   if (typing || menuOpen() || e.ctrlKey || e.metaKey || e.altKey) return;
-  if (/^[1-8]$/.test(e.key)){ const vis = SECTIONS.filter(secOpen); if (vis[+e.key - 1]) showSection(vis[+e.key - 1]); return; }
+  if (/^[1-9]$/.test(e.key)){ const vis = SECTIONS.filter(secOpen); if (vis[+e.key - 1]) showSection(vis[+e.key - 1]); return; }
   if (e.key !== ' ' || e.repeat || S.section !== 'mina') return;
   if (tg !== document.body && tg !== document.documentElement) return;
   e.preventDefault(); dig(); pressDig();
