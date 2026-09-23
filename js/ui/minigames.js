@@ -17,7 +17,7 @@ let view = 'menu';
 const GAMES = [
   {id: 'bet',   name: 'Sube o baja',        ico: 'chart', col: 'var(--blue)',   txt: 'Apuesta a si el precio de un metal sube o baja en los próximos segundos.', cost: 'Con tu caja · paga ×1,9'},
   {id: 'cart',  name: 'Vagoneta desbocada', ico: 'cart',  col: 'var(--orange)', txt: 'La vagoneta se ha soltado: salta rocas y agujeros y coge pepitas.', cost: '1 ficha'},
-  {id: 'blast', name: 'Voladura',           ico: 'tnt',   col: 'var(--red)',    txt: 'Detona cada carga en el momento justo. Las perfectas seguidas hacen combo.', cost: '1 ficha'},
+  {id: 'blast', name: 'Voladura',           ico: 'tnt',   col: 'var(--red)',    txt: 'Detona cada carga en el momento justo. Tres dificultades: normal, difícil y experto.', cost: '1 ficha'},
   {id: 'trade', name: 'Trading',            ico: 'bull',  col: 'var(--green)',  txt: 'Largo o corto con apalancamiento, sin tocar tu almacén. Para los valientes.', cost: 'Con tu caja · riesgo alto'},
 ];
 const VIEWS = {menu: '#mgMenu', bet: '#mgBet', cart: '#mgCart', blast: '#mgBlast', trade: '#mgTrade'};
@@ -27,7 +27,7 @@ function cardsHtml(){
   const G = mgState();
   return GAMES.map(g => {
     const lock = g.id === 'trade' && !tradeOpen(), needTk = g.id === 'cart' || g.id === 'blast', noTk = needTk && G.tk <= 0;
-    const best = g.id === 'cart' && G.best.cart ? `Récord: ${G.best.cart} pepitas` : g.id === 'blast' && G.best.blast ? `Récord: ${nf1.format(G.best.blast)} puntos` : g.id === 'bet' && G.bets.length ? `${G.bets.filter(b => b.pay > b.stake).length} de ${G.bets.length} acertadas` : g.id === 'trade' && S.trades ? `${S.wins}/${S.trades} operaciones ganadas` : '';
+    const best = g.id === 'cart' && G.best.cart ? `Récord: ${G.best.cart} pepitas` : g.id === 'blast' && (G.best.blast || G.best.blast_dificil || G.best.blast_experto) ? `Récord: ${['experto', 'dificil', 'normal'].filter(k => G.best[bestKey(k)]).map(k => `${nf1.format(G.best[bestKey(k)])} (${BLAST_MODES[k].name.toLowerCase()})`)[0]}` : g.id === 'bet' && G.bets.length ? `${G.bets.filter(b => b.pay > b.stake).length} de ${G.bets.length} acertadas` : g.id === 'trade' && S.trades ? `${S.wins}/${S.trades} operaciones ganadas` : '';
     const live = g.id === 'bet' && G.bet ? '<span class="mg-live">En juego</span>' : g.id === 'trade' && S.positions.length ? `<span class="mg-live">${S.positions.length} abierta${S.positions.length > 1 ? 's' : ''}</span>` : '';
     return `<button type="button" class="mg-card${lock ? ' locked' : ''}${noTk ? ' spent' : ''}" data-mg="${g.id}" style="--gc:${g.col}">
       <span class="mg-ico">${icon(g.ico)}</span>
@@ -52,7 +52,7 @@ on('mgOpen', id => { showSection('minijuegos'); openGame(id); });
 /* Si sales a mitad de partida no pierdes lo ganado: se cobra lo que llevabas. */
 function bankUnfinished(){
   if (C && !C.done && C.t > 0){ C.done = true; if (C.got) mgPay('cart', C.got*2, C.got); }
-  if (B && !B.over && B.res.length){ B.over = true; if (B.pts) mgPay('blast', B.pts*8, B.pts); }
+  if (B && !B.over && B.res.length){ B.over = true; if (B.pts) mgPay(bestKey(B.mode), B.pts*BLAST_PAY, B.pts); }
 }
 on('section', k => { if (k !== 'minijuegos'){ bankUnfinished(); stopCart(); stopBlast(); if (view === 'cart' || view === 'blast') openGameQuiet('menu'); } });
 function openGameQuiet(id){ view = id; Object.entries(VIEWS).forEach(([k, sel]) => $(sel).hidden = k !== view); }
@@ -61,7 +61,7 @@ export function updateMinigames(){
   const G = mgState();
   setT($('#mgMeta'), `Fichas ${G.tk}/${MG_TICKETS}`);
   if (view === 'menu'){
-    const key = [G.tk, G.bet ? 1 : 0, G.bets.length, G.best.cart, G.best.blast, tradeOpen(), S.positions.length, S.trades, S.level].join('|');
+    const key = [G.tk, G.bet ? 1 : 0, G.bets.length, G.best.cart, G.best.blast, G.best.blast_dificil, G.best.blast_experto, tradeOpen(), S.positions.length, S.trades, S.level].join('|');
     if (key !== K.mg){ K.mg = key; $('#mgCards').innerHTML = cardsHtml(); }
   }
   if (view === 'bet') updateBet();
@@ -272,19 +272,41 @@ function drawCartScene(t, idle){
 /* ================= voladura ================= */
 const BV = $('#blastCv'), bg2 = BV.getContext('2d');
 let B = null, bRaf = 0, bW = 0, bH = 0, bLast = 0;
+/* Tres dificultades: más cargas, aguja más rápida, zona más estrecha (y que se mueve). Cada una guarda su récord. */
+const BLAST_MODES = {
+  normal:  {name: 'Normal',  n: 5,  sp: [.75, .22],  w: [.13, .017, .05],  good: .12, drift: [99, 0],   lives: 0, col: 'var(--green)', txt: '5 cargas. Para calentar.'},
+  dificil: {name: 'Difícil', n: 8,  sp: [1.0, .15],  w: [.11, .01, .045],  good: .09, drift: [3, .10],  lives: 0, col: 'var(--gold)',  txt: '8 cargas más rápidas. La zona verde se mueve.'},
+  experto: {name: 'Experto', n: 12, sp: [1.25, .12], w: [.09, .006, .035], good: .07, drift: [1, .16],  lives: 3, col: 'var(--red)',   txt: '12 cargas a toda velocidad. Al tercer fallo, se acabó.'},
+};
+const BLAST_PAY = 8;   // segundos de producción por punto
+const bestKey = m => m === 'normal' ? 'blast' : 'blast_' + m;
+function modeCards(tk){
+  const G = mgState(), cur = G.bmode || 'normal';
+  return `<div class="bm-list">${Object.entries(BLAST_MODES).map(([k, M]) => {
+    const best = G.best[bestKey(k)];
+    return `<button type="button" class="bm${k === cur ? ' on' : ''}" data-bmode="${k}" style="--bc:${M.col}"${tk > 0 ? '' : ' disabled'}><b>${M.name}</b><span>${M.txt}</span><small>${best ? `Récord: ${nf2.format(best)} pts` : 'Sin récord'}</small></button>`;
+  }).join('')}</div>`;
+}
 function blastReady(){
   stopBlast(); B = null; $('#blastBtn').disabled = true;
   const tk = tickets();
-  overlay($('#blastOv'), `<div class="ov-card"><span class="ov-ico">${icon('tnt')}</span><b>Voladura</b><span>Cinco cargas. Pulsa <b>¡Detonar!</b> (o espacio) cuando la aguja esté en la zona <b>verde</b>. Cada carga es más rápida y la zona más estrecha.</span>
-    ${tk > 0 ? `<button type="button" class="btn btn-red big" id="blastGo">¡A volar! (1 ficha · te quedan ${tk})</button>` : '<span class="ov-warn">No te quedan fichas. Vuelve después de medianoche.</span>'}</div>`);
+  overlay($('#blastOv'), `<div class="ov-card wide"><b>Elige la voladura</b><span class="ov-sub">Detona cuando la aguja esté en la zona <b>verde</b>. Cuantas más cargas, más puedes ganar.</span>
+    ${modeCards(tk)}
+    ${tk > 0 ? `<span class="fine">Cada partida gasta 1 ficha · te quedan ${tk}</span>` : '<span class="ov-warn">No te quedan fichas. Vuelve después de medianoche.</span>'}</div>`);
   [bW, bH] = sizeCanvas(BV); if (bW){ bg2.setTransform(dpr, 0, 0, dpr, 0, 0); drawBlast(0); }
 }
-$('#blastOv').addEventListener('click', e => { if (e.target.id === 'blastGo') startBlast(); if (e.target.id === 'blastAgain') blastReady(); });
-function newZone(i){ return {c: .2 + Math.random()*.6, w: Math.max(.05, .13 - i*.017)}; }
+$('#blastOv').addEventListener('click', e => {
+  const m = e.target.closest('[data-bmode]'); if (m && !m.disabled){ mgState().bmode = m.dataset.bmode; startBlast(); return; }
+  if (e.target.id === 'blastAgain') startBlast();
+  if (e.target.id === 'blastModes') blastReady();
+});
+function newZone(i){ const M = B.M; return {c0: .2 + Math.random()*.6, c: 0, w: Math.max(M.w[2], M.w[0] - i*M.w[1]), ph: Math.random()*6.28, amp: i >= M.drift[0] ? M.drift[1] : 0}; }
 function startBlast(){
   if (!useTicket('blast')){ toast('No te quedan fichas.'); return; }
+  const mode = mgState().bmode || 'normal', M = BLAST_MODES[mode];
   [bW, bH] = sizeCanvas(BV);
-  B = {i: 0, n: 0, dir: 1, speed: .75, zone: newZone(0), res: [], streak: 0, pts: 0, anim: 0, parts: [], shake: 0, flash: 0, label: '', over: false};
+  B = {mode, M, i: 0, n: 0, dir: 1, speed: M.sp[0], zone: null, res: [], streak: 0, pts: 0, fails: 0, anim: 0, parts: [], shake: 0, flash: 0, label: '', over: false, t: 0};
+  B.zone = newZone(0); B.zone.c = B.zone.c0;
   overlay($('#blastOv'), ''); $('#blastBtn').disabled = false; $('#blastBtn').focus(); sfx('ui');
   bLast = performance.now(); cancelAnimationFrame(bRaf); bRaf = requestAnimationFrame(blastLoop);
 }
@@ -293,10 +315,11 @@ function detonate(){
   if (!B || B.over || B.anim > 0) return;
   const d = Math.abs(B.n - B.zone.c), half = B.zone.w/2;
   let kind, pts = 0;
-  if (d <= half){ kind = 'perfect'; pts = 1*(1 + .25*B.streak); B.streak++; }
-  else if (d <= half + .12){ kind = 'good'; pts = .5; B.streak = 0; }
-  else { kind = 'fail'; B.streak = 0; }
-  B.pts += pts; B.res.push(kind); B.anim = 1; B.label = kind === 'perfect' ? (B.streak > 1 ? `¡Perfecta! Combo ×${nf2.format(1 + .25*(B.streak - 1))}` : '¡Perfecta!') : kind === 'good' ? 'Buena' : '¡Fallida!';
+  if (d <= half){ kind = 'perfect'; pts = Math.min(2, 1 + .25*B.streak); B.streak++; }
+  else if (d <= half + B.M.good){ kind = 'good'; pts = .5; B.streak = 0; }
+  else { kind = 'fail'; B.streak = 0; B.fails++; }
+  B.pts += pts; B.res.push(kind); B.anim = 1;
+  B.label = kind === 'perfect' ? (B.streak > 1 ? `¡Perfecta! Combo ×${nf2.format(Math.min(2, 1 + .25*(B.streak - 1)))}` : '¡Perfecta!') : kind === 'good' ? 'Buena' : B.M.lives && B.fails >= B.M.lives ? '¡Derrumbe!' : '¡Fallida!';
   const u = bH/300, cx = bW*.5, cy = bH*.38, big = kind === 'perfect' ? 1 : kind === 'good' ? .6 : .25;
   if (kind !== 'fail'){ B.flash = big; B.shake = 10*big; for (let i = 0; i < 40*big; i++){ const a = Math.random()*6.2832, v = (120 + Math.random()*320)*u; B.parts.push({x: cx, y: cy, vx: Math.cos(a)*v, vy: Math.sin(a)*v - 120*u, life: .8 + Math.random()*.6, k: Math.random() < .35 ? 'ore' : 'rock', s: (3 + Math.random()*6)*u}); } sfx('boom'); }
   else { B.shake = 4; for (let i = 0; i < 12; i++) B.parts.push({x: cx, y: cy, vx: (Math.random() - .5)*100*u, vy: -Math.random()*80*u, life: 1, k: 'smoke', s: 10*u}); sfx('bad'); }
@@ -309,8 +332,13 @@ function blastLoop(now){
   if (!B) return;
   if (B.anim > 0){
     B.anim -= dt*1.1;
-    if (B.anim <= 0){ B.anim = 0; B.i++; if (B.i >= 5){ B.over = true; $('#blastBtn').disabled = true; finishBlast(); } else { B.zone = newZone(B.i); B.speed = .75 + B.i*.22; B.label = ''; } }
+    if (B.anim <= 0){
+      B.anim = 0; B.i++;
+      if (B.i >= B.M.n || (B.M.lives && B.fails >= B.M.lives)){ B.over = true; $('#blastBtn').disabled = true; finishBlast(); }
+      else { B.zone = newZone(B.i); B.speed = B.M.sp[0] + B.i*B.M.sp[1]; B.label = ''; }
+    }
   } else if (!B.over){
+    B.t += dt; const z = B.zone; z.c = Math.max(z.w/2 + .02, Math.min(1 - z.w/2 - .02, z.c0 + z.amp*Math.sin(B.t*1.7 + z.ph)));
     B.n += B.dir*B.speed*dt; if (B.n > 1){ B.n = 2 - B.n; B.dir = -1; } if (B.n < 0){ B.n = -B.n; B.dir = 1; }
   }
   B.parts.forEach(p => { p.x += p.vx*dt; p.y += p.vy*dt; p.vy += (p.k === 'smoke' ? -20 : 700)*dt; p.life -= dt; }); B.parts = B.parts.filter(p => p.life > 0);
@@ -319,13 +347,14 @@ function blastLoop(now){
   if (!B.over || B.parts.length) bRaf = requestAnimationFrame(blastLoop);
 }
 function finishBlast(){
-  const sec = B.pts*8, best = mgState().best.blast || 0;
-  const pay = mgPay('blast', sec, Math.round(B.pts*100)/100), rec = B.pts > best;
-  const tk = tickets(), per = B.res.filter(r => r === 'perfect').length;
-  overlay($('#blastOv'), `<div class="ov-card"><b>${per === 5 ? '¡Cinco perfectas!' : B.pts >= 3 ? '¡Buena voladura!' : 'Voladura terminada'}</b>
-    <span class="ov-big">${B.res.map(r => r === 'perfect' ? '★' : r === 'good' ? '✔' : '✖').join(' ')}</span><span>${nf2.format(B.pts)} puntos · ${per} perfecta${per === 1 ? '' : 's'}</span>
-    <span class="ov-pay">+${money(pay)}</span>${rec ? '<span class="ov-rec">¡Nuevo récord!</span>' : ''}
-    <div class="ov-btns">${tk > 0 ? `<button type="button" class="btn btn-red" id="blastAgain">Otra vez (quedan ${tk})</button>` : '<span class="ov-warn">Sin fichas hasta medianoche</span>'}<button type="button" class="btn btn-plain" data-mg-back>Volver</button></div></div>`);
+  const key = bestKey(B.mode), best = mgState().best[key] || 0, score = Math.round(B.pts*100)/100;
+  const pay = B.pts > 0 ? mgPay(key, B.pts*BLAST_PAY, score) : 0, rec = score > best;
+  const tk = tickets(), per = B.res.filter(r => r === 'perfect').length, all = per === B.M.n;
+  const title = all ? '¡Todas perfectas!' : B.M.lives && B.fails >= B.M.lives ? '¡Derrumbe! Se acabó la voladura' : B.pts >= B.M.n*.6 ? '¡Buena voladura!' : 'Voladura terminada';
+  overlay($('#blastOv'), `<div class="ov-card"><span class="bm-tag" style="--bc:${B.M.col}">${B.M.name}</span><b>${title}</b>
+    <span class="ov-big bm-res">${B.res.map(r => r === 'perfect' ? '★' : r === 'good' ? '✔' : '✖').join(' ')}</span><span>${nf2.format(B.pts)} puntos · ${per} perfecta${per === 1 ? '' : 's'} de ${B.M.n}</span>
+    ${pay ? `<span class="ov-pay">+${money(pay)}</span>` : '<span class="ov-warn">Sin premio esta vez</span>'}${rec ? '<span class="ov-rec">¡Nuevo récord!</span>' : ''}
+    <div class="ov-btns">${tk > 0 ? `<button type="button" class="btn btn-red" id="blastAgain">Otra vez (quedan ${tk})</button><button type="button" class="btn btn-gold" id="blastModes">Cambiar dificultad</button>` : '<span class="ov-warn">Sin fichas hasta medianoche</span>'}<button type="button" class="btn btn-plain" data-mg-back>Volver</button></div></div>`);
 }
 function drawBlast(t){
   const w = bW, h = bH; if (!w) return;
@@ -355,7 +384,7 @@ function drawBlast(t){
   bg2.fillStyle = '#2a1a0e'; bg2.beginPath(); bg2.roundRect(gx - 5*u, gy - 5*u, gw + 10*u, gh + 10*u, 10*u); bg2.fill();
   bg2.fillStyle = '#ff5b4f'; bg2.fillRect(gx, gy, gw, gh);
   if (B){
-    const z = B.zone, yl = Math.max(0, z.c - z.w/2 - .12), yr = Math.min(1, z.c + z.w/2 + .12);
+    const z = B.zone, yl = Math.max(0, z.c - z.w/2 - B.M.good), yr = Math.min(1, z.c + z.w/2 + B.M.good);
     bg2.fillStyle = '#ffc62e'; bg2.fillRect(gx + yl*gw, gy, (yr - yl)*gw, gh);
     bg2.fillStyle = '#3fcf6c'; bg2.fillRect(gx + (z.c - z.w/2)*gw, gy, z.w*gw, gh);
     const nx = gx + B.n*gw;
@@ -366,7 +395,8 @@ function drawBlast(t){
   // marcador
   bg2.font = `400 ${Math.round(20*u)}px "Lilita One", sans-serif`; bg2.lineWidth = 4; bg2.strokeStyle = '#2a1a0e'; bg2.fillStyle = '#fff'; bg2.textBaseline = 'top';
   if (B){
-    bg2.textAlign = 'left'; const s1 = `Carga ${Math.min(5, B.i + 1)}/5`; bg2.strokeText(s1, 12, 10); bg2.fillText(s1, 12, 10);
+    bg2.textAlign = 'left'; const s1 = `${B.M.name} · carga ${Math.min(B.M.n, B.i + 1)}/${B.M.n}`; bg2.strokeText(s1, 12, 10); bg2.fillText(s1, 12, 10);
+    if (B.M.lives){ const left = Math.max(0, B.M.lives - B.fails); bg2.font = `400 ${Math.round(18*u)}px "Lilita One", sans-serif`; const s3 = '♥'.repeat(left) + '♡'.repeat(B.M.lives - left); bg2.strokeText(s3, 12, 36*u); bg2.fillStyle = '#ff7d72'; bg2.fillText(s3, 12, 36*u); bg2.fillStyle = '#fff'; bg2.font = `400 ${Math.round(20*u)}px "Lilita One", sans-serif`; }
     bg2.textAlign = 'right'; const s2 = `${nf2.format(B.pts)} pts`; bg2.strokeText(s2, w - 12, 10); bg2.fillText(s2, w - 12, 10);
     if (B.label){ bg2.textAlign = 'center'; bg2.textBaseline = 'middle'; bg2.font = `400 ${Math.round(34*u)}px "Lilita One", sans-serif`; bg2.strokeText(B.label, w/2, h*.16); bg2.fillStyle = B.label.startsWith('¡Fall') ? '#ff7d72' : B.label.startsWith('Buena') ? '#ffe27a' : '#5fe08a'; bg2.fillText(B.label, w/2, h*.16); }
   }

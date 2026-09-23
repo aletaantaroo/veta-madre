@@ -23,7 +23,7 @@ export function mgPay(game, sec, score){
   const v = Math.max(1, sec*mgUnit()), G = mgState();
   if (score != null && score > (G.best[game] || 0)){ G.best[game] = score; }
   earn(v, .4, 'otros');
-  log(`Minijuego (${game === 'cart' ? 'vagoneta' : 'voladura'}): +${money(v)}`, 'up');
+  log(`Minijuego (${game === 'cart' ? 'vagoneta' : game === 'blast' ? 'voladura' : 'voladura ' + game.split('_')[1].replace('dificil', 'difícil')}): +${money(v)}`, 'up');
   K.mg = ''; updateUI();
   return v;
 }
