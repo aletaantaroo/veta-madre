@@ -1,8 +1,8 @@
-import { K, drawChart, emit, on, queueTut, sfx, showSection, toast, updateUI } from '../core/bus.js';
+import { K, drawChart, emit, on, queueTut, selectDesk, sfx, showSection, toast, updateUI } from '../core/bus.js';
 import { $, $$, setT } from '../core/dom.js';
 import { clamp, money, nf0, smoney, weight } from '../core/format.js';
 import { METALS, MK } from '../data/content.js';
-import { estRates } from '../game/economy.js';
+import { estRates, gameMin, hhmm, isDay } from '../game/economy.js';
 import { health } from '../game/health.js';
 import { dig } from '../game/mining.js';
 import { S, cap, findCount, legAvail, lvReq, posPnl, unl, xpNeed } from '../game/state.js';
@@ -10,6 +10,7 @@ import { resizeChart } from '../render/charts.js';
 import { updateAch } from './achievements.js';
 import { updateBiz } from './biz.js';
 import { updateFin } from './finance.js';
+import { icon } from './icons.js';
 import { updateMarket } from './market.js';
 import { closeMenu, menuOpen, menuTab, openMenu, updateMenuHome } from './menu.js';
 import { pressDig, updateMine } from './mine.js';
@@ -50,7 +51,7 @@ function openSection(k){
   K.log = true; updateUI();
 }
 $$('#nav button[data-sec]').forEach(b => b.addEventListener('click', () => showSection(S.section === b.dataset.sec && b.dataset.sec !== 'mina' ? 'mina' : b.dataset.sec)));
-document.addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (b) showSection(b.dataset.go); });
+document.addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (!b) return; showSection(b.dataset.go); if (b.dataset.deskGo && S.section === b.dataset.go) selectDesk(b.dataset.deskGo); });
 $$('.win-wrap').forEach(w => w.addEventListener('click', e => { if (e.target === w) showSection('mina'); }));
 
 function updateNav(){
@@ -98,6 +99,9 @@ function renderUI(){
   setT(ki, `${smoney(RR.net)}/s` + (S.positions.length ? ` · ${money(inPos)} en trading` : ''));
   ki.classList.toggle('neg', RR.net < 0);
   $('#pillMoney').title = `Ingresos ${money(RR.inc)}/s · gastos ${money(RR.exp)}/s`;
+  const gm = gameMin(), day = isDay(); setT($('#kClock'), hhmm(gm)); setT($('#kDay'), `Día ${S.day || 0}`);
+  const ci = $('#kClockIco'); if (ci.dataset.icon !== (day ? 'sun' : 'moon')){ ci.dataset.icon = day ? 'sun' : 'moon'; ci.innerHTML = icon(ci.dataset.icon); $('#pillClock').classList.toggle('night', !day); }
+  $('#pillClock').title = `Día ${S.day || 0}, ${hhmm(gm)} · ${day ? 'de día: tarifa punta de la luz hasta las 18:00' : 'de noche: tarifa valle hasta las 06:00 y salen los hallazgos nocturnos'} · un día dura 6 minutos`;
   const lc = $('#legacyChip'); lc.hidden = !S.legacy; setT(lc, `Legado ${S.legacy} · +${legAvail()*5} %`);
   const H = health(), bf = $('#bNavFin'); bf.hidden = !H.lv || !secOpen('finanzas'); bf.classList.toggle('bad', H.lv > 1);
   const newF = findCount() - (S.museoSeen || 0), bmu = $('#bNavMu'); bmu.hidden = newF <= 0 || S.section === 'museo'; setT(bmu, String(newF));
@@ -132,4 +136,5 @@ document.addEventListener('keydown', e => {
   e.preventDefault(); dig(); pressDig();
 });
 on('ui', renderUI);
+on('newDay', d => toast(`Medianoche: empieza el Día ${d}`));
 on('section', openSection);

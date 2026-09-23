@@ -31,6 +31,10 @@
       <span class="pill-ico" data-icon="coin"></span>
       <span class="pill-txt"><b id="kMoney">0 €</b><small id="kInc">0 €/s</small></span>
     </div>
+    <div class="pill pill-clock" id="pillClock" role="timer" aria-label="Hora del juego">
+      <span class="clk-ico" id="kClockIco" data-icon="sun"></span>
+      <span class="pill-txt"><b id="kClock">07:00</b><small id="kDay">Día 0</small></span>
+    </div>
     <span class="legacy-chip" id="legacyChip" hidden></span>
     <button type="button" class="round-btn bell-btn" data-act="feed" id="navFeed" aria-label="Avisos" aria-expanded="false"><span data-icon="bell"></span><span class="badge" id="bFeed" hidden>0</span></button>
     <button type="button" class="round-btn" data-act="menu" id="navMenu" aria-label="Abrir el menú (Esc)"><span data-icon="gear"></span></button>
@@ -61,6 +65,7 @@
           <span class="prod-k">Producción</span>
           <b class="prod-v" id="prodVal">0 €/s</b>
           <span class="health" id="healthPill" data-h="0"><i></i><span id="healthTxt">Todo en orden</span></span>
+          <span class="job-chip" id="jobChip" hidden></span>
           <span class="prod-caret" aria-hidden="true"></span>
         </button>
         <div class="prod-body" id="prodBody">
@@ -72,6 +77,7 @@
             <span class="vr-txt"><b id="vaultLv">Caja fuerte</b><small id="vaultInfo">—</small></span>
             <button type="button" class="btn btn-gold sm" data-act="buyCap" id="btnVault">Ampliar</button>
           </div>
+          <div class="mine-jobs" id="mineJobs" hidden><div class="mj-head"><b>Encargos</b><button type="button" class="linkish" data-go="mercado" data-desk-go="con">ver tablón</button></div><div id="mineJobList"></div></div>
         </div>
       </div>
     </div>
@@ -188,7 +194,7 @@
             <div class="desk-tabs" role="tablist" id="deskTabs">
               <button type="button" role="tab" data-desk="sell" id="dtSell" aria-selected="true">Vender</button>
               <button type="button" role="tab" data-desk="trade" id="dtTrade" aria-selected="false">Trading<span class="badge" id="bTrade" hidden>0</span></button>
-              <button type="button" role="tab" data-desk="con" id="dtCon" aria-selected="false">Contratos<span class="badge" id="bCon" hidden>0</span></button>
+              <button type="button" role="tab" data-desk="con" id="dtCon" aria-selected="false">Encargos<span class="badge" id="bCon" hidden>0</span></button>
               <button type="button" role="tab" data-desk="ord" id="dtOrd" aria-selected="false">Órdenes<span class="badge" id="bOrd" hidden>0</span></button>
               <button type="button" role="tab" data-desk="log" id="dtLog" aria-selected="false">Historial</button>
             </div>
@@ -241,14 +247,15 @@
             </div>
 
             <div class="desk-panel" id="pCon" role="tabpanel" hidden>
-              <p class="locked" id="conLocked">Los clientes empiezan a llamar en el <b>nivel 3</b>.</p>
+              <p class="locked" id="conLocked">Los clientes empiezan a llamar en el <b>nivel 5</b>.</p>
               <div class="desk-panel" id="conBody">
                 <div class="rep"><span>Reputación</span><span class="stars" id="stars">☆☆☆☆☆</span><span class="meta" id="repTxt">0 de 5</span></div>
-                <p class="info">Los clientes pagan por encima del spot a cambio de un plazo. Si no entregas a tiempo, pagas la penalización y pierdes reputación.</p>
-                <h3 class="sub-h">Ofertas</h3>
-                <div class="items" id="offList"></div>
-                <h3 class="sub-h">En curso</h3>
-                <div class="items" id="conList"></div>
+                <h3 class="sub-h">En curso <span class="meta" id="jobCount">0 de 3</span></h3>
+                <div class="jobs" id="conList"></div>
+                <h3 class="sub-h">Tablón de encargos</h3>
+                <p class="fine">Los clientes pagan más que el mercado a cambio de un plazo en horas del juego. Si no llegas, pagas penalización y pierdes reputación.</p>
+                <div class="jobs" id="offList"></div>
+                <details class="clients"><summary>Tus clientes</summary><div class="cli-list" id="cliList"></div></details>
               </div>
             </div>
 

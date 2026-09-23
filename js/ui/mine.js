@@ -3,11 +3,13 @@ import { $, $$, esc, setT } from '../core/dom.js';
 import { money, nf0, pfmt, weight } from '../core/format.js';
 import { CREW, METALS, MK, OBJ, UP } from '../data/content.js';
 import { HEALTH_TXT, efficiency, health, prodValue } from '../game/health.js';
+import { reserved } from '../game/jobs.js';
 import { dig, fullFlash } from '../game/mining.js';
 import { buyCrew, buyUp, qty, setQty } from '../game/shop.js';
 import { S, cap, capCost, clickPow, costN, crewMult, gps, gpsOf, has, lvReq, maxN, metalConv, mk, opF, physPrice, prodMult, unl } from '../game/state.js';
 import { drawCrewIcon } from '../render/sprites.js';
 import { kindIcon } from './icons.js';
+import { updateJobsMine } from './jobs.js';
 import { secOpen } from './layout.js';
 
 /* ---------- panel de producción: cuánto sacas, de qué, dónde picas y si algo va mal ---------- */
@@ -59,13 +61,15 @@ export function updateMine(){
   $('#vaultRow').classList.toggle('urgent', full > 0);
   setT($('#clickInfo'), `+${weight(clickPow(m))} ${M.low}`);
   const tr = mk(m).price >= (mk(m).hist[Math.max(0, mk(m).hist.length - 61)] || mk(m).price);
-  $('#qsInfo').innerHTML = `${M.name}: <b>${weight(S.stock[m])}</b> · vale ≈ <b>${money(S.stock[m]*physPrice(m))}</b><br><span class="meta">a ${pfmt(m, mk(m).price)} <span class="${tr ? 't-up' : 't-down'}">${tr ? '▲' : '▼'}</span></span>`;
+  const rsv = Math.min(S.stock[m], reserved(m)), free = S.stock[m] - rsv;
+  $('#qsInfo').innerHTML = `${M.name}: <b>${weight(free)}</b> · vale ≈ <b>${money(free*physPrice(m))}</b><br><span class="meta">a ${pfmt(m, mk(m).price)} <span class="${tr ? 't-up' : 't-down'}">${tr ? '▲' : '▼'}</span>${rsv > 0 ? ` · ${weight(rsv)} apartado para encargos` : ''}</span>`;
   const ob = $('#objBar'); ob.hidden = S.obj >= OBJ.length;
   if (!ob.hidden){ const o = OBJ[S.obj]; setT($('#objN'), `Objetivo ${S.obj+1}/${OBJ.length}`); setT($('#objTxt'), o.txt); setT($('#objR'), `premio ${money(o.r)}`); }
   const amb = $('#autoMineBox'); amb.hidden = !S.perks.p_auto;
   if (!amb.hidden){ $('#chkAutoMine').checked = !!S.autoMine.on; if (document.activeElement !== $('#autoMineTh')) $('#autoMineTh').value = String(S.autoMine.th); }
-  $('#qs50').classList.toggle('cant', !(S.stock[m] > 0)); $('#qs100').classList.toggle('cant', !(S.stock[m] > 0));
+  $('#qs50').classList.toggle('cant', !(free > 0)); $('#qs100').classList.toggle('cant', !(free > 0));
   $('#digDock').classList.toggle('full', S.stock[m] >= cap(m) || fullFlash > 0);
+  updateJobsMine();
   updateCrew(); updateUps();
 }
 export function buildCrew(){

@@ -12,6 +12,8 @@ export const METALS = {
   cu:{name:'Cobre', low:'cobre', p0:.01,  sig:.009, fvol:.0007, capBase:40000, yld:1.3,  lv:15, open:400000, line:'#dd8c56', ink:'#2a1206', vein:['#6b3519','#d98a55'], fl:['#e39a66','#b8683a'], glow:'240,160,110', txt:'#f3b68c'},
 };
 export const MK = ['au','ag','cu'];
+/* Un día del juego dura 6 minutos reales (1 hora = 15 s). De 06:00 a 18:00 es de día. */
+export const DAY_LEN = 360;
 export const CREW = [
   {id:'batea',    name:'Buscador con batea',     plural:'Los buscadores', desc:'Criba la grava del arroyo a mano.',                 cost:15,    gps:0.0025},
   {id:'pico',     name:'Minero con pico',        plural:'Los mineros',    desc:'Sigue la veta a golpe de pico.',                      cost:100,   gps:0.02},
@@ -83,7 +85,25 @@ export const REGIMES = [
   {name:'Mercado lateral', mu:0, vol:.8, tone:''},
   {name:'Mercado nervioso', mu:0, vol:1.8, tone:''},
 ];
-export const CLIENTS = ['Joyería Ortega','Relojería Salvat','Taller Dorado','Fundición Ibérica','Orfebres del Sur','Banco del Norte','Casa Valdés','Electrónica Neón','Laboratorio Prado','Coleccionistas Arco','Numismática Ríos','Cableados Levante','Paneles Solares Brisa','Filigrana Galán'];
+/* Clientes de los encargos: cada uno pide sus metales, tiene su carácter y te es más fiel cuantas más veces le cumples. */
+export const CLIENTS = [
+  {id:'ortega',  name:'Joyería Ortega',        ico:'coin',    col:'#ffc62e', m:['au'],      txt:'Encargos pequeños y bien pagados. No soporta los retrasos.'},
+  {id:'salvat',  name:'Relojería Salvat',      ico:'clock',   col:'#ff9636', m:['au','ag'], txt:'Siempre con prisa: pide muchos encargos urgentes.', urgent:.35},
+  {id:'banco',   name:'Banco del Norte',       ico:'bank',    col:'#3ea8ff', m:['au'],      txt:'Pedidos enormes para sus reservas, con mucho plazo.', big:.35},
+  {id:'rios',    name:'Numismática Ríos',      ico:'star',    col:'#a06bff', m:['au','ag'], txt:'Monedas conmemorativas: le encantan los pedidos en cadena.', chain:.3},
+  {id:'galan',   name:'Filigrana Galán',       ico:'helmet',  col:'#ff5b4f', m:['au','ag'], txt:'Artesanos exigentes: pagan un extra por la calidad.', prem:.03},
+  {id:'brisa',   name:'Paneles Solares Brisa', ico:'sun',     col:'#2cd3c6', m:['ag'],      txt:'Necesita plata para sus células solares.'},
+  {id:'neon',    name:'Electrónica Neón',      ico:'bolt',    col:'#3fcf6c', m:['ag','cu'], txt:'Plata y cobre para circuitos. Encadena pedidos si le caes bien.', chain:.2},
+  {id:'levante', name:'Cableados Levante',     ico:'factory', col:'#ff8a4c', m:['cu'],      txt:'Cobre por toneladas.', big:.3},
+  {id:'iberica', name:'Fundición Ibérica',     ico:'wrench',  col:'#9a7a57', m:['cu','ag'], txt:'Compra lo que le eches, aunque regatea un poco.', prem:-.01},
+];
+/* Tipos de encargo. mult: cantidad respecto a uno normal · prem: prima sobre el spot · t: plazo en segundos reales (15 s = 1 hora del juego) · xp: experiencia por euro · rep: reputación. */
+export const JOB_KINDS = {
+  normal:  {name:'Encargo',     mult:[1, 1],     prem:[.02, .07], t:[90, 240],  xp:1,   rep:.5},
+  urgente: {name:'¡Urgente!',   mult:[.4, .6],   prem:[.15, .25], t:[40, 75],   xp:1.2, rep:.75, lv:6},
+  grande:  {name:'Gran pedido', mult:[3, 5],     prem:[.08, .12], t:[360, 600], xp:1, rep:.75, lv:9},
+  cadena:  {name:'Cadena',      mult:[.8, 1.1],  prem:[.05, .09], t:[120, 200], xp:1,   rep:.25, lv:7, steps:3, bonus:.25},
+};
 export const STRATA = [
   {name:'Arenisca',   to:40,   base:'#8b6b4c', hi:'#a98863', lo:'#5d4531'},
   {name:'Pizarra',    to:150,  base:'#4f585c', hi:'#6c767b', lo:'#333a3d'},
@@ -179,8 +199,11 @@ export const ACH = [
   {id:'a_win10',  name:'Trader constante', desc:'Consigue 10 operaciones ganadoras.', test:()=>S.wins>=10},
   {id:'a_big',    name:'Golpe maestro', desc:'Gana 1.000 € o más en una sola operación.', test:()=>!!S.flags.a_big},
   {id:'a_liq',    name:'Lección aprendida', desc:'Sufre una liquidación. A todos nos ha pasado.', test:()=>!!S.flags.a_liq},
-  {id:'a_con',    name:'Palabra cumplida', desc:'Cumple tu primer contrato.', test:()=>S.conDone>=1},
-  {id:'a_con10',  name:'Proveedor de confianza', desc:'Cumple 10 contratos.', test:()=>S.conDone>=10},
+  {id:'a_con',    name:'Palabra cumplida', desc:'Cumple tu primer encargo.', test:()=>S.conDone>=1},
+  {id:'a_con10',  name:'Proveedor de confianza', desc:'Cumple 10 encargos.', test:()=>S.conDone>=10},
+  {id:'a_chain',  name:'Eslabón a eslabón', desc:'Completa un encargo en cadena.', test:()=>!!(S.jobStats && S.jobStats.chain)},
+  {id:'a_urg5',   name:'Mensajero exprés', desc:'Cumple 5 encargos urgentes.', test:()=>!!(S.jobStats && S.jobStats.urgente >= 5)},
+  {id:'a_loyal',  name:'Cliente de toda la vida', desc:'Consigue la máxima confianza de un cliente.', test:()=>Object.values(S.cli || {}).some(c => c.n >= 12)},
   {id:'a_rep',    name:'Reputación intachable', desc:'Llega a 5 estrellas de reputación.', test:()=>S.rep>=5},
   {id:'a_ag',     name:'Brillo de luna', desc:'Abre el yacimiento de plata.', test:()=>!!S.opened.ag},
   {id:'a_cu',     name:'Toma de tierra', desc:'Abre el yacimiento de cobre.', test:()=>!!S.opened.cu},
@@ -230,7 +253,7 @@ export const OBJ = [
   {txt:'Ten 5 buscadores y 1 minero', r:80, test:()=>(S.owned.batea||0)>=5 && (S.owned.pico||0)>=1},
   {txt:'Amplía la caja fuerte (botón «Ampliar» del panel de producción)', r:150, test:()=>S.cap>=1},
   {txt:'Aprende tu primera habilidad', r:200, test:()=>Object.keys(S.skills).length>=1},
-  {txt:'Cumple un contrato con un cliente', r:400, test:()=>S.conDone>=1},
+  {txt:'Cumple un encargo (Mercado → Encargos)', r:400, test:()=>S.conDone>=1},
   {txt:'Compra una vagoneta y mira su consumo en Finanzas', r:600, test:()=>(S.owned.vagoneta||0)>=1},
   {txt:'Contrata al Agente de ventas', r:1000, test:()=>has('u_agente')},
   {txt:'Abre el yacimiento de plata', r:3000, test:()=>!!S.opened.ag},
@@ -243,7 +266,7 @@ export const RES_NEWS = [['La OPEP recorta la producción: el combustible se enc
 export const TUTS = {
   market:    {t:'El mercado', sec:'mercado', s:['El precio de cada metal cambia cada segundo. Noticias, datos económicos y la mina rival lo mueven.','En <b>Vender</b> conviertes tu almacén en dinero. Vender mucho de golpe baja el precio.','Las pestañas con candado se abren con mejoras o al subir de nivel.']},
   finanzas:  {t:'Tus cuentas', sec:'finanzas', s:['Arriba ves si ganas o pierdes dinero por segundo.','Las <b>nóminas</b> se pagan cada minuto: ten caja o activa la venta de metal para pagarlas.','Las máquinas gastan recursos: cómpralos o prodúcelos tú.']},
-  contracts: {t:'Nuevo: contratos', sec:'mercado', desk:'con', s:['Los clientes pagan <b>más que el mercado</b> si entregas a tiempo.','Acepta solo lo que puedas producir antes del plazo.','Si fallas, pagas penalización y baja tu reputación.']},
+  contracts: {t:'Nuevo: encargos', sec:'mercado', desk:'con', s:['Los clientes pagan <b>más que el mercado</b> si entregas a tiempo. Llegan al tablón del Mercado.','Los aceptados aparecen en la mina: cuando tengas el metal, pulsa <b>Entregar</b>.','Cumple y cada cliente confiará más en ti: mejores precios y pedidos en cadena.']},
   loans:     {t:'Nuevo: préstamos', sec:'finanzas', s:['El banco te presta para crecer más rápido.','Cobra un <b>0,5 % por minuto</b>: invierte en algo que devuelva más que eso.','Devuelve la deuda en cuanto puedas.']},
   ag:        {t:'Nuevo: plata', sec:'mina', s:['Abre el yacimiento desde el selector <b>Oro · Plata · Cobre</b> de la mina.','Todas tus minas producen a la vez; cada mina extra sube un 50 % la plantilla.','La plata se mueve mucho más que el oro: más riesgo y más oportunidades.']},
   taxes:     {t:'Hacienda', sec:'finanzas', s:['Cada 5 minutos pagas un 10 % de tu beneficio.','Si en ese periodo pierdes dinero, no pagas.','El <b>Asesor fiscal</b> (Mejoras) lo baja al 5 %.']},

@@ -22,6 +22,8 @@ const I = {
   wrench: `<path d="M14.6 3.4a5 5 0 0 0-4.2 6.8L3.6 17a2.2 2.2 0 0 0 3.2 3.2l6.8-6.8a5 5 0 0 0 6.8-4.2l-3 1.2-2.4-2.4z" fill="#dfe7ef" ${O}/>`,
   museum: `<path d="M10 3.5h4v2.2c3.2 1.6 4.8 4.8 4 8.4-.7 3.2-3.2 5.6-6 5.6s-5.3-2.4-6-5.6c-.8-3.6.8-6.8 4-8.4z" fill="#fff" ${O}/><path d="M8.6 8.4q-3 .6-2.4 4M15.4 8.4q3 .6 2.4 4" fill="none" ${O}/><path d="M7 13.4h10" stroke="#b8923a" stroke-width="1.8"/><path d="M5 21.2h14" ${O}/>`,
   close: `<path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/>`,
+  sun: `<circle cx="12" cy="12" r="5.2" fill="#ffc62e" ${O}/><path d="M12 2.4v2.6M12 19v2.6M2.4 12H5M19 12h2.6M5.2 5.2l1.8 1.8M17 17l1.8 1.8M18.8 5.2L17 7M7 17l-1.8 1.8" stroke="#2a1a0e" stroke-width="2.2" stroke-linecap="round"/><circle cx="10.4" cy="10.4" r="1.6" fill="#fff6c8"/>`,
+  moon: `<path d="M15.6 3.4a8.8 8.8 0 1 0 5 14.8 7.4 7.4 0 0 1-5-14.8z" fill="#f4f1dc" ${O}/><circle cx="10" cy="14" r="1.4" fill="#c9c3a6"/><circle cx="13.4" cy="17.6" r="1" fill="#c9c3a6"/><path d="M19 4.6l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" fill="#ffc62e"/>`,
   bell: `<path d="M12 3.2a5.6 5.6 0 0 1 5.6 5.6v3.6l2 3.4H4.4l2-3.4V8.8A5.6 5.6 0 0 1 12 3.2z" fill="#ffc62e" ${O}/><path d="M9.6 18.4a2.4 2.4 0 0 0 4.8 0" fill="#ffc62e" ${O}/><path d="M9 7.2a3.4 3.4 0 0 1 2.2-1.6" stroke="#fff6c8" stroke-width="1.6" stroke-linecap="round"/>`,
   sound: `<path d="M3.6 9.2h3.6l5-4v13.6l-5-4H3.6z" fill="#3ea8ff" ${O}/><path d="M15.4 8.6a4.6 4.6 0 0 1 0 6.8M18 6a8.4 8.4 0 0 1 0 12" fill="none" stroke="#2a1a0e" stroke-width="2" stroke-linecap="round"/>`,
   motion: `<path d="M12 2.8l1.9 4.8 4.8 1.9-4.8 1.9L12 16.2l-1.9-4.8-4.8-1.9 4.8-1.9z" fill="#a06bff" ${O}/><path d="M18.6 14.6l.9 2.2 2.2.9-2.2.9-.9 2.2-.9-2.2-2.2-.9 2.2-.9z" fill="#ffc62e" ${O}/><path d="M5.6 15.6l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z" fill="#2cd3c6" ${O}/>`,
@@ -34,7 +36,7 @@ const I = {
   clock: `<circle cx="12" cy="12" r="8.8" fill="#fff" ${O}/><path d="M12 7v5.4l3.4 2" fill="none" stroke="#2a1a0e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`,
 };
 const KIND = {'Mina':'pick', 'Mercado':'chart', 'Equipo':'helmet', 'Operaciones':'wrench'};
-function icon(name){ return `<svg viewBox="0 0 24 24" aria-hidden="true">${I[name] || I.star}</svg>`; }
+export function icon(name){ return `<svg viewBox="0 0 24 24" aria-hidden="true">${I[name] || I.star}</svg>`; }
 export function kindIcon(kind){ return icon(KIND[kind] || 'star'); }
 export function paintIcons(root = document){
   root.querySelectorAll('[data-icon]').forEach(el => { if (!el.firstElementChild) el.innerHTML = icon(el.dataset.icon); });

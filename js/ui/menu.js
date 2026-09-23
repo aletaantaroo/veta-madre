@@ -164,7 +164,7 @@ $('#importFile').addEventListener('change', e => {
 let lastAway = null;
 export function catchUp(el, report){
   const counted = Math.min(el, 3600);
-  const b = {money:S.money, mined:S.mined, level:S.level, pos:S.positions.length, ord:S.orders.length, arrears:S.arrears, debt:S.debt, stock:{...S.stock}};
+  const b = {day:S.day || 0, money:S.money, mined:S.mined, level:S.level, pos:S.positions.length, ord:S.orders.length, arrears:S.arrears, debt:S.debt, stock:{...S.stock}};
   setSilent(true);
   try { simulate(counted); for (let i=0;i<Math.min(counted, NSLOTS*TPC);i++) tick(false); } finally { setSilent(false); }
   drawChart();
@@ -174,6 +174,7 @@ export function catchUp(el, report){
   if (dMined > 0) items.push(`Tus minas extrajeron el equivalente a <b>${weight(dMined)}</b> de oro.`);
   const dm = S.money - b.money;
   if (Math.abs(dm) > .01) items.push(`Tu caja cambió <b class="${dm >= 0 ? 't-up' : 't-down'}">${smoney(dm)}</b> (empresas, ventas automáticas, nóminas y recursos).`);
+  if ((S.day || 0) > b.day) items.push(`En la mina pasaron <b>${S.day - b.day} día${S.day - b.day > 1 ? 's' : ''}</b>: ya es el Día ${S.day}.`);
   if (S.level > b.level) items.push(`Subiste al <b>nivel ${S.level}</b>.`);
   if (S.positions.length !== b.pos) items.push(`Se cerraron <b>${b.pos - S.positions.length}</b> posiciones de trading. Míralas en el Historial.`);
   if (S.orders.length !== b.ord) items.push(`Se ejecutaron <b>${b.ord - S.orders.length}</b> órdenes de venta.`);

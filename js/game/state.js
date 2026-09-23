@@ -6,14 +6,14 @@ export let S;
 export function setS(v){ S = v; }
 function newMk(m){ const p = METALS[m].p0; return {fund:p, x:0, price:p, hist:[], candles:[], cur:null, shock:0, volBoost:0, regime:{i:Math.floor(Math.random()*4), left:Math.round(rnd(60,200))}}; }
 export function newStock(d){ return {p:d.p, fund:d.p, x:0, hist:[], long:[], k:0, shock:0}; }
-export const fresh = () => ({v:5, money:0, stock:{au:0,ag:0,cu:0}, vein:'au', opened:{au:true}, mined:0, earned:0, allEarned:0, clicks:0, sold:0, best:0, nuggets:0,
+export const fresh = () => ({v:6, money:0, stock:{au:0,ag:0,cu:0}, vein:'au', opened:{au:true}, mined:0, earned:0, allEarned:0, clicks:0, sold:0, best:0, nuggets:0,
   owned:{}, ups:{}, cap:0, mk:{au:newMk('au'), ag:newMk('ag'), cu:newMk('cu')},
   positions:[], pnlReal:0, trades:0, wins:0, lev:5, orders:[], autoSell:false, offers:[], contracts:[], rep:0, conDone:0, conFail:0,
   ev:null, evNext:60, log:[], ind:{sma:true, boll:true, rsi:true}, uid:1,
   level:1, xp:0, sp:0, skills:{}, biz:{}, tecF:1, stocks:{}, hold:{}, divs:0, stPnl:0, rival:{fill:.2, T:200, bought:false, dumps:0},
   ach:{}, flags:{}, legacy:0, prestiges:0, section:'mina', mm:'au', selStock:'CIE', stTf:'tick', lastAuSale:0,
   res:{e:5000, f:1000, x:100}, resLv:{e:0, f:0, x:0}, auto:{e:true, eCharge:false, f:true, x:true}, autoPay:true, solar:0, maint:100, maintAuto:false,
-  moral:100, arrears:0, unpaid:false, payT:60, nomina:0, debt:0, borrowed:false, taxT:300, taxBase:0, tarT:64, px:{fx:0, xx:0, ex:0, fs:0, es:0},
+  moral:100, arrears:0, unpaid:false, payT:60, nomina:0, debt:0, borrowed:false, taxT:300, taxBase:0, tarT:195, day:0, px:{fx:0, xx:0, ex:0, fs:0, es:0},
   fin:{cur:{}, last:{}, hist:[], t:0}, runStart:Date.now(), records:{}, recDone:{},
   perks:{}, legSpent:0, autoMine:{on:true, th:0.02}, autoMineT:{}, wind:0, windF:.8, plants:{bio:0, fab:0}, obj:0, tutSeen:{}, finds:{}, lastStratum:0, shopOpen:false, guide:0, saved:Date.now()});
 
@@ -101,6 +101,7 @@ export function migrate(d){
     d.migrated = true;
   }
   const o = Object.assign(f, d);
+  if ((d.v || 0) < 6){ o.tarT = ((d.tarT || 0) % 120)*3; o.day = o.day || 0; }
   if (d.guide == null) o.guide = (d.clicks || d.earned) ? 9 : 0;
   if (d.shopOpen == null) o.shopOpen = !!(d.clicks || d.earned);
   if ((d.v || 0) < 5 && (d.clicks || d.earned)){
@@ -112,7 +113,7 @@ export function migrate(d){
     Object.entries(OLD).forEach(([k, lv]) => { if ((o.level || 1) >= lv) o.grand[k] = 1; });
     if (o.ups && o.ups.u_broker) o.grand.trading = 1;
   }
-  o.v = 5;
+  o.v = 6;
   ['res','resLv','auto','px','fin','autoMine','plants'].forEach(k => o[k] = Object.assign({}, f[k], o[k]));
   MK.forEach(m => { if (!o.mk[m]) o.mk[m] = newMk(m); if (!o.mk[m].regime || !REGIMES[o.mk[m].regime.i]) o.mk[m].regime = {i:2,left:120}; });
   o.ind = Object.assign({sma:true, boll:true, rsi:true}, o.ind);

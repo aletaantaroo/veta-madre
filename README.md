@@ -13,6 +13,7 @@ Tycoon minero en el navegador. Empiezas con un pico y una veta de oro y acabas c
 - **Progreso:** niveles, habilidades, logros, contrarreloj y venta de la compañía a cambio de lingotes de legado.
 - **El descenso:** la mina baja estrato a estrato (arenisca, pizarra, granito, cuarzo, basalto y roca madre). Por el camino aparecen 30 hallazgos que se guardan en el **Museo**, con colecciones que dan ventajas permanentes, y unos cuantos secretos escondidos.
 - **Ritmo pausado (v10):** las secciones aparecen poco a poco según subes de nivel (Mercado en el 3, Finanzas en el 4, Empresas en el 12, Bolsa en el 20…). El panel de **Producción** de la mina te dice cuánto sacas, si algo va mal y cómo arreglarlo. Los avisos son discretos y quedan en la **campana**. Copias de seguridad automáticas y partida descargable en un archivo.
+- **Reloj y encargos (v11):** un día del juego dura 6 minutos; arriba ves la hora y el día (empieza en el Día 0). Los clientes dejan encargos en el tablón del Mercado (normales, urgentes, grandes pedidos y cadenas de tres entregas) con plazo en horas del juego; se entregan desde la mina y cada cliente te es más fiel cuanto más le cumples.
 - **Primeros pasos (v10.1):** la primera vez, el capataz y una flecha te enseñan a picar, vender y contratar. La tienda se pliega en una pestaña al borde y las mejoras van en desplegables por tipo.
 
 ### Ajustar el ritmo

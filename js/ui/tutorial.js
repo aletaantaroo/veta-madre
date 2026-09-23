@@ -15,7 +15,7 @@ export function showNextTut(){
   if (tutCur || menuOpen() || !tutQ.length) return;
   const k = tutQ.shift(), T = TUTS[k]; tutCur = k; S.tutSeen[k] = true;
   setT($('#tutEyebrow'), T.t.startsWith('Nuevo') ? 'Desbloqueado' : 'Tutorial');
-  setT($('#tutTitle'), T.t.replace(/^Nuevo: /, ''));
+  { const tt = T.t.replace(/^Nuevo: /, ''); setT($('#tutTitle'), tt[0].toUpperCase() + tt.slice(1)); }
   $('#tutSteps').innerHTML = T.s.map(x => `<li>${x}</li>`).join('');
   $('#tutGo').hidden = S.section === T.sec && !T.desk;
   const el = $('#tut'); el.hidden = false; document.body.classList.add('tut-open'); drawForeman(); sfx('pop');

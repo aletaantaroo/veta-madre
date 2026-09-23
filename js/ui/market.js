@@ -2,8 +2,10 @@ import { K, on, selectDesk, updateUI } from '../core/bus.js';
 import { $, $$, esc, setT } from '../core/dom.js';
 import { clamp, clock, fmtT, money, nf0, nf1, pfmt, plab, smoney, toUnit, unitOf, weight } from '../core/format.js';
 import { EVENTS, METALS, MK, REGIMES } from '../data/content.js';
+import { reserved } from '../game/jobs.js';
 import { buyCap, createOrder, moves, openPos, sell } from '../game/market.js';
 import { S, ask, bid, cap, capCost, fee, has, impactOf, mk, physPrice, posPnl, refineBonus, sk, spread, unl } from '../game/state.js';
+import { updateJobsMarket } from './jobs.js';
 import { metalSegHtml } from './layout.js';
 
 /* ---- mercado ---- */
@@ -79,11 +81,12 @@ function updateDesk(){
   const bc = $('#bCon'); bc.hidden = !S.offers.length; setT(bc, String(S.offers.length));
   const bo = $('#bOrd'); bo.hidden = !S.orders.length; setT(bo, String(S.orders.length));
   if (desk === 'sell'){
-    setT($('#stockInfo'), `Tu ${M.low} en el almacén: ${weight(S.stock[m])} de ${weight(cap(m))}`);
+    const rsv = Math.min(S.stock[m], reserved(m)), free = S.stock[m] - rsv;
+    setT($('#stockInfo'), `Tu ${M.low} en el almacén: ${weight(S.stock[m])} de ${weight(cap(m))}${rsv > 0 ? ` (${weight(rsv)} apartado para encargos)` : ''}`);
     setT($('#physPrice'), pfmt(m, physPrice(m)));
     setT($('#feeInfo'), `(spot − comisión del ${nf1.format(fee()*100)} %${refineBonus() ? ` + refinería ${nf0.format(refineBonus()*100)} %` : ''})`);
-    [['est10',.1],['est50',.5],['est100',1]].forEach(([id,f]) => { const amt = S.stock[m]*f, imp = impactOf(m, amt); setT($('#'+id), amt > 0 ? '≈ ' + money(amt*physPrice(m)*(1-imp/2)) : '—'); });
-    const impAll = impactOf(m, S.stock[m]);
+    [['est10',.1],['est50',.5],['est100',1]].forEach(([id,f]) => { const amt = free*f, imp = impactOf(m, amt); setT($('#'+id), amt > 0 ? '≈ ' + money(amt*physPrice(m)*(1-imp/2)) : '—'); });
+    const impAll = impactOf(m, free);
     setT($('#impactTxt'), S.stock[m] > 0 ? `Vender mucho de golpe empuja el precio a la baja. Venderlo todo ahora lo bajaría un ${nf1.format(impAll*100)} %.` : 'Vender mucho de golpe empuja el precio a la baja: repartir las ventas suele salir mejor.');
     $$('.sell').forEach(b => b.classList.toggle('cant', !(S.stock[m] > 0)));
     setT($('#capLvl'), String(S.cap+1));
@@ -104,33 +107,7 @@ function updateDesk(){
       else S.positions.forEach(p => { const el = list.querySelector(`[data-pid="${p.id}"] [data-r=pnl]`); if (!el) return; const pnl = posPnl(p); setT(el, `${smoney(pnl)} (${nf1.format(pnl/p.margin*100)} %)`); el.className = 'pnl ' + (pnl>=0?'t-up':'t-down'); });
     }
   }
-  if (desk === 'con'){
-    const on = unl('contracts'); $('#conLocked').hidden = on; $('#conBody').hidden = !on;
-    if (on){
-      const full = Math.floor(S.rep), half = S.rep - full >= .5;
-      setT($('#stars'), '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(5 - full - (half?1:0)));
-      setT($('#repTxt'), `${nf1.format(S.rep)} de 5 · mejores precios cuanto más alta`);
-      const ol = $('#offList'), okey = 'k' + S.offers.map(o=>o.id).join(',');
-      if (okey !== K.off){
-        K.off = okey;
-        ol.innerHTML = S.offers.length ? S.offers.map(o => `<div class="item" data-oid="${o.id}"><div><b>${esc(o.client)}</b> quiere ${weight(o.g)} de ${METALS[o.m].low} a ${pfmt(o.m,o.price)} <span class="t-up">(+${nf1.format(o.prem*100)} %)</span>
-          <div class="sub">Plazo ${fmtT(o.time)} · penalización ${money(o.pen)} · <span data-r="exp"></span></div></div>
-          <div class="item-side"><button type="button" class="btn sm" data-act="reject" data-id="${o.id}">Rechazar</button><button type="button" class="btn sm primary" data-act="accept" data-id="${o.id}">Aceptar</button></div></div>`).join('')
-          : '<p class="empty">No hay ofertas ahora mismo. Llegan cada minuto, más o menos.</p>';
-      }
-      S.offers.forEach(o => { const el = ol.querySelector(`[data-oid="${o.id}"] [data-r=exp]`); if (el) setT(el, `caduca en ${fmtT(o.exp)}`); });
-      const cl = $('#conList'), ckey = 'k' + S.contracts.map(c=>c.id).join(',');
-      if (ckey !== K.con){
-        K.con = ckey;
-        cl.innerHTML = S.contracts.length ? S.contracts.map(c => `<div class="item" data-cid="${c.id}"><div><b>${esc(c.client)}</b> · ${weight(c.g)} de ${METALS[c.m].low} a ${pfmt(c.m,c.price)} → ${money(c.g*c.price)}
-          <div class="sub" data-r="st"></div></div><div class="item-side"><button type="button" class="btn sm primary" data-act="deliver" data-id="${c.id}" data-r="btn">Entregar</button></div></div>`).join('')
-          : '<p class="empty">Ningún contrato en curso.</p>';
-      }
-      S.contracts.forEach(c => { const row = cl.querySelector(`[data-cid="${c.id}"]`); if (!row) return;
-        setT(row.querySelector('[data-r=st]'), `Tienes ${weight(Math.min(S.stock[c.m],c.g))} de ${weight(c.g)} · quedan ${fmtT(c.left)}`);
-        row.querySelector('[data-r=btn]').classList.toggle('cant', S.stock[c.m] < c.g); });
-    }
-  }
+  if (desk === 'con') updateJobsMarket();
   if (desk === 'ord'){
     const on = has('u_agente'); $('#orLocked').hidden = on; $('#orBody').hidden = !on;
     $('#autoSell').checked = !!S.autoSell; setT($('#oPriceL'), `Precio (${unitOf(m)})`);

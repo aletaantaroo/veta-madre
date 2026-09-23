@@ -2,7 +2,8 @@ import { K, drawChart, selectDesk, sfx, toast, updateUI } from '../core/bus.js';
 import { $ } from '../core/dom.js';
 import { bizIpo, bizMgr, bizPause, bizUp } from '../game/biz.js';
 import { borrow, buyPlant, buyRes, buySolar, buyWind, payArrears, repair, repay, upRes } from '../game/economy.js';
-import { acceptOffer, buyCap, closePos, deliver, sell } from '../game/market.js';
+import { acceptOffer, deliver, rejectOffer } from '../game/jobs.js';
+import { buyCap, closePos, sell } from '../game/market.js';
 import { buyPerk, learn, prestige, respec } from '../game/progress.js';
 import { openVein } from '../game/shop.js';
 import { S, save } from '../game/state.js';
@@ -20,7 +21,7 @@ document.addEventListener('click', e => {
     case 'close': { const p = S.positions.find(x=>x.id===nid); if (p){ closePos(p,'manual'); updateUI(); } break; }
     case 'cancel': { const i = S.orders.findIndex(x=>x.id===nid); if (i>=0){ S.orders.splice(i,1); K.ord=''; drawChart(); updateUI(); } break; }
     case 'accept': acceptOffer(nid); break;
-    case 'reject': { const i = S.offers.findIndex(x=>x.id===nid); if (i>=0){ S.offers.splice(i,1); K.off=''; updateUI(); } break; }
+    case 'reject': rejectOffer(nid); break;
     case 'deliver': deliver(nid); break;
     case 'vein': openVein(b.dataset.m); break;
     case 'buyCap': buyCap(); break;

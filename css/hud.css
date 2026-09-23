@@ -29,6 +29,10 @@
 .pill-money.bump b{animation:bounce .45s cubic-bezier(.3,1.8,.5,1)}
 @keyframes bounce{0%{transform:scale(1)}35%{transform:scale(1.22)}100%{transform:scale(1)}}
 @keyframes blink{50%{opacity:.45}}
+.pill-clock{gap:6px;padding:0 12px 0 6px;min-width:0}
+.pill-clock .clk-ico{flex:0 0 auto;width:32px;height:32px;padding:3px;border-radius:50%;background:#7cc8ff;border:2px solid var(--ink);box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
+.pill-clock.night .clk-ico{background:#23305e}
+.pill-clock b{font-variant-numeric:tabular-nums}
 .legacy-chip{font:400 14px var(--display);color:var(--gold-ink);background:var(--gold);border:2.5px solid var(--ink);border-radius:999px;padding:5px 12px;box-shadow:0 3px 0 rgba(0,0,0,.35);white-space:nowrap}
 .bell-btn{margin-left:auto;position:relative}
 .bell-btn+.round-btn{margin-left:0}
@@ -234,8 +238,16 @@
   .pill{height:42px;padding-right:10px}
   .pill b{font-size:17px}
   .pill-money{min-width:0;flex:1 1 auto}
+  .pill-clock{height:42px;padding:0 8px 0 4px;gap:4px}
+  .pill-clock .clk-ico{width:26px;height:26px;padding:2px}
+  .pill-clock b{font-size:15px}
+  .pill-clock small{font-size:10.5px}
   .pill-ico{width:30px;height:30px}
-  .legacy-chip{display:none}
+  .pill-clock{gap:6px;padding:0 12px 0 6px;min-width:0}
+.pill-clock .clk-ico{flex:0 0 auto;width:32px;height:32px;padding:3px;border-radius:50%;background:#7cc8ff;border:2px solid var(--ink);box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
+.pill-clock.night .clk-ico{background:#23305e}
+.pill-clock b{font-variant-numeric:tabular-nums}
+.legacy-chip{display:none}
   .lvl-badge{width:50px;height:50px}
   .round-btn{width:44px;height:44px}
   .dock{left:50%;right:auto;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 16px);justify-content:center;gap:4px;padding:7px 8px 5px;border-radius:22px}
@@ -247,7 +259,8 @@
   .obj-ico{width:30px;height:30px;padding:3px}
   .obj-n{display:none}
   .prod{width:100%;border-radius:15px}
-  .prod-head{grid-template-columns:auto 1fr auto;grid-template-areas:"v h c";padding:5px 10px}
+  .prod-head{grid-template-columns:auto 1fr auto auto;grid-template-areas:"v j h c";padding:5px 10px}
+  .job-chip{grid-area:j;justify-self:start}
   .prod-k{display:none}
   .prod-v{font-size:20px}
   .health{justify-self:end;max-width:100%}
@@ -271,6 +284,9 @@
   .dig-lbl{font-size:19px}
 }
 @media (max-width: 480px){
+  .pill-clock .clk-ico{width:20px;height:20px;padding:1px}
+  .pill-clock{padding:0 7px 0 4px}
+  .pill-clock b{font-size:14px}
   .gem .d-lbl{display:none}
   .gem{height:50px}
   :root{--dock-h:66px}
@@ -281,3 +297,20 @@
   .obj-txt{font-size:14px}
   .dig-btn{width:96px;height:96px}
 }
+
+/* ---------- encargos en la mina ---------- */
+.job-chip{padding:1px 8px;border:2px solid var(--ink);border-radius:999px;background:#fff;font:800 11px var(--body);white-space:nowrap}
+.job-chip.ready{background:var(--green);color:#fff;animation:rowpop 1.2s ease-in-out infinite}
+@media (min-width: 861px){ .job-chip{display:none!important} }
+.mine-jobs{display:flex;flex-direction:column;gap:5px;padding-top:6px;border-top:2px dashed var(--line)}
+.mj-head{display:flex;align-items:baseline;justify-content:space-between}
+.mj-head b{font:400 14px var(--display);font-weight:400}
+.mj{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:7px;padding:4px 5px;border:2px solid transparent;border-radius:11px;background:rgba(255,255,255,.7)}
+.mj.ready{border-color:var(--ink);background:#e2f9e8}
+.mj-main{display:flex;flex-direction:column;gap:3px;min-width:0}
+.mj-txt{font:800 11.5px/1.2 var(--body);color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mj-txt b{color:var(--ink)}
+.mj-left{font:400 12px var(--display);color:var(--ink-3);font-variant-numeric:tabular-nums}
+.mj-left.late{color:var(--down);animation:blink .9s steps(2) infinite}
+.mj .btn{margin:0;padding:3px 8px;min-height:28px;font-size:12.5px}
+.bar.mj-bar{height:7px}

@@ -1,13 +1,14 @@
 import { K, bump, drawChart, emit, setTicker, sfx, toast, updateUI } from '../core/bus.js';
 import { $ } from '../core/dom.js';
-import { clamp, fromUnit, gauss, money, nf0, niceRound, pfmt, pick, rnd, smoney, weight } from '../core/format.js';
-import { BIZ, BIZ_EV, CLIENTS, EVENTS, METALS, MK, NEWS, NSLOTS, REGIMES, RES_NEWS, STOCKS, ST_NEG, ST_POS, TPC } from '../data/content.js';
+import { clamp, fromUnit, gauss, money, nf0, pfmt, pick, rnd, smoney, weight } from '../core/format.js';
+import { BIZ, BIZ_EV, EVENTS, METALS, MK, NEWS, NSLOTS, REGIMES, RES_NEWS, STOCKS, ST_NEG, ST_POS, TPC } from '../data/content.js';
 import { needs, rec, resTick } from './economy.js';
+import { contractsTick, reserved } from './jobs.js';
 import { checkAch, earn, log, silent } from './progress.js';
-import { S, ask, bid, bizCount, bizFull, bizLvl, cap, capCost, clickEq, fee, gpsEq, has, impactOf, metalConv, mk, newStock, posPnl, refineBonus, setDone, sk, unl } from './state.js';
+import { S, ask, bid, bizCount, bizFull, bizLvl, cap, capCost, fee, has, impactOf, mk, newStock, posPnl, refineBonus, sk, unl } from './state.js';
 
 /* ================= mercados ================= */
-let newsTimer = 35, offerTimer = 20, autoSellCd = 0, divTimer = 60, tecTimer = 60, bizEvTimer = 90, stEvTimer = 50;
+let newsTimer = 35, autoSellCd = 0, divTimer = 60, tecTimer = 60, bizEvTimer = 90, stEvTimer = 50;
 function setPrice(m){
   const s = mk(m); s.price = s.fund*Math.exp(s.x);
   if (s.hist.length) s.hist[s.hist.length-1] = s.price;
@@ -164,11 +165,11 @@ function bizTick(){
 
 /* ---- venta física ---- */
 export function sell(m, frac, auto){
-  const amt = S.stock[m]*frac;
-  if (!(amt > 0) || amt*mk(m).price < 0.005){ if (!auto) toast(`No tienes ${METALS[m].low} que vender.`); return 0; }
+  const keep = Math.min(S.stock[m], reserved(m)), amt = (S.stock[m] - keep)*frac;
+  if (!(amt > 0) || amt*mk(m).price < 0.005){ if (!auto) toast(keep > 0 ? `Todo tu ${METALS[m].low} está apartado para encargos: entrégalos desde la mina.` : `No tienes ${METALS[m].low} que vender.`); return 0; }
   const s = mk(m), imp = impactOf(m, amt), fill = s.price*(1 - imp/2)*(1 - fee())*(1 + refineBonus());
   const rev = amt*fill;
-  S.stock[m] = frac >= 1 ? 0 : S.stock[m] - amt; S.sold += amt*METALS[m].p0/80;
+  S.stock[m] = frac >= 1 ? keep : S.stock[m] - amt; S.sold += amt*METALS[m].p0/80;
   if (m === 'au'){
     if (s.price > S.best) S.best = s.price;
     S.lastAuSale = Date.now();
@@ -258,43 +259,3 @@ function processOrders(){
   }
 }
 
-/* ---- contratos ---- */
-function makeOffer(){
-  const m = pick(MK.filter(x => S.opened[x]));
-  const base = Math.max(clickEq()*metalConv(m)*rnd(25,50), gpsEq()*metalConv(m)*rnd(60,160));
-  const g = niceRound(Math.min(base, cap(m)*0.85)); if (g <= 0) return;
-  const prem = rnd(.02,.07) + S.rep*0.008 + (sk('t3') ? .03 : 0) + (S.perks.p_clients ? .05 : 0) + (setDone('his') ? .10 : 0), price = mk(m).price*(1+prem);
-  S.offers.push({id:S.uid++, m, client:pick(CLIENTS), g, price, prem, time: Math.round(rnd(9,24))*10, pen: 0.25*g*price, exp: 40});
-  K.off = '';
-}
-function contractsTick(){
-  if (unl('contracts') && S.offers.length < 2 && (offerTimer -= 1) <= 0){ makeOffer(); offerTimer = rnd(35, 75)*(sk('t3') ? .6 : 1); }
-  for (const o of S.offers.slice()) if ((o.exp -= 1) <= 0){ S.offers.splice(S.offers.indexOf(o),1); K.off=''; }
-  for (const c of S.contracts.slice()){
-    if ((c.left -= 1) <= 0){
-      S.contracts.splice(S.contracts.indexOf(c),1); K.con='';
-      const pen = Math.min(Math.max(0,S.money), c.pen); S.money -= pen; rec('contratos', -pen);
-      S.rep = Math.max(0, S.rep - 1); S.conFail++;
-      const msg = `Contrato incumplido con ${c.client}: penalización de ${money(pen)}`;
-      log(msg, 'down'); toast(msg, 'down');
-    }
-  }
-}
-export function acceptOffer(id){
-  const o = S.offers.find(x=>x.id===id); if (!o) return;
-  if (S.contracts.length >= 3){ toast('Tienes 3 contratos en curso. Entrega alguno antes de aceptar más.'); return; }
-  S.offers.splice(S.offers.indexOf(o),1);
-  S.contracts.push({id:o.id, m:o.m, client:o.client, g:o.g, price:o.price, pen:o.pen, left:o.time});
-  log(`Aceptas entregar ${weight(o.g)} de ${METALS[o.m].low} a ${o.client} a ${pfmt(o.m, o.price)}`);
-  K.off = K.con = ''; updateUI();
-}
-export function deliver(id){
-  const c = S.contracts.find(x=>x.id===id); if (!c) return;
-  if (S.stock[c.m] < c.g){ toast(`Te faltan ${weight(c.g - S.stock[c.m])} de ${METALS[c.m].low}.`); return; }
-  S.stock[c.m] -= c.g; S.sold += c.g*METALS[c.m].p0/80;
-  const rev = c.g*c.price; earn(rev, 1, 'contratos');
-  S.rep = Math.min(5, S.rep + 0.5); S.conDone++;
-  S.contracts.splice(S.contracts.indexOf(c),1); K.con='';
-  const msg = `Entregado a ${c.client}: ${weight(c.g)} de ${METALS[c.m].low} · +${money(rev)}`;
-  log(msg, 'up'); toast(msg, 'up'); bump('#pillMoney'); sfx('sell'); emit('sold', c.m, rev, false); updateUI();
-}

@@ -1,15 +1,29 @@
-import { toast, updateUI } from '../core/bus.js';
+import { emit, toast, updateUI } from '../core/bus.js';
 import { clamp, gauss, money, nf0, nf2, nf3 } from '../core/format.js';
-import { BIZ, CREW, METALS, MK, RES } from '../data/content.js';
+import { BIZ, CREW, DAY_LEN, METALS, MK, RES } from '../data/content.js';
 import { sell } from './market.js';
-import { earn, log, xpMoney } from './progress.js';
+import { earn, log, silent, xpMoney } from './progress.js';
 import { S, bizInc, bizMult, bizTotal, cap, crewMult, fac, gps, has, jewelPrice, jewelRate, metalConv, mk, ownFrac, physPrice, prodMult, unl } from './state.js';
 
 /* ================= operaciones: recursos, gastos, finanzas ================= */
 
 export const capR = k => RES[k].base*Math.pow(3, S.resLv[k]);
 export const capRCost = k => RES[k].cost*Math.pow(3.3, S.resLv[k]);
-export const isDay = () => (S.tarT % 120) >= 60;
+export const isDay = () => (S.tarT % DAY_LEN) >= DAY_LEN/2;
+/* Reloj del juego: S.tarT son los segundos del ciclo (0 = 18:00, DAY_LEN/2 = 06:00) y S.day cuenta las medianoches. */
+export const gameMin = () => (1080 + S.tarT/DAY_LEN*1440) % 1440;
+export const hhmm = m => `${String(Math.floor(m/60) % 24).padStart(2, '0')}:${String(Math.floor(m % 60)).padStart(2, '0')}`;
+const toGameMin = sec => sec/DAY_LEN*1440;
+/* Hora y día del juego dentro de «sec» segundos reales, para plazos. */
+export function whenTxt(sec){
+  const m = gameMin() + toGameMin(sec), d = Math.floor(m/1440);
+  return `${d === 0 ? 'hoy' : d === 1 ? 'mañana' : `el día ${(S.day || 0) + d}`} a las ${hhmm(m % 1440)}`;
+}
+function advanceClock(dt){
+  const mid = DAY_LEN/4, a = S.tarT, b = a + dt;
+  if ((a < mid && b >= mid) || (a < mid + DAY_LEN && b >= mid + DAY_LEN)){ S.day = (S.day || 0) + 1; if (!silent) emit('newDay', S.day); }
+  S.tarT = b % DAY_LEN;
+}
 const ePrice = () => (isDay() ? .20 : .08)*Math.exp(S.px.ex);
 const fPrice = () => 1.2*Math.exp(S.px.fx);
 const xPrice = () => 6*Math.exp(S.px.xx);
@@ -77,6 +91,7 @@ function calcUtil(dt){
   return ms.length ? u/ms.length : 1;
 }
 function econStep(dt){
+  advanceClock(dt);
   util = calcUtil(dt);
   const N0 = needs(), cm = mineCostMult();
   const N = {e:N0.e*cm*util, f:N0.f*cm*util, x:N0.x*cm*util, sal:N0.sal*cm*(0.2 + 0.8*util), mv:N0.mv};
@@ -123,7 +138,6 @@ function econStep(dt){
 }
 export function simulate(el){ while (el > 1e-9){ const d = Math.min(5, el); econStep(d); el -= d; } }
 export function resTick(){
-  S.tarT = (S.tarT + 1) % 120;
   const px = S.px; let sh;
   sh = Math.abs(px.fs) > .0005 ? px.fs*.3 : (px.fs = 0); px.fs -= sh;
   px.fx = clamp(px.fx - .01*px.fx + .007*gauss() + sh, -.8, .8);

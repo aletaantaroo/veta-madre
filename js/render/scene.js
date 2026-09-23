@@ -2,7 +2,7 @@ import { K, emit, on, sfx, showSection, updateUI } from '../core/bus.js';
 import { $, dpr, refreshDpr, setT } from '../core/dom.js';
 import { clamp, money, mulberry32, nf0, weight } from '../core/format.js';
 import { RM } from '../core/settings.js';
-import { BIZ, CREW, FINDS, GAL_DEPTH, METALS, MK, RARITY, STRATA } from '../data/content.js';
+import { BIZ, CREW, DAY_LEN, FINDS, GAL_DEPTH, METALS, MK, RARITY, STRATA } from '../data/content.js';
 import { needs } from '../game/economy.js';
 import { collectFind, patTopo, secret, visibleFinds } from '../game/finds.js';
 import { collectNugget, dig, nugget } from '../game/mining.js';
@@ -124,7 +124,8 @@ const openedList = () => MK.filter(m => S.opened[m]);
 /* ---------- cielo, sol, luna y montañas ---------- */
 const STARS = Array.from({length: 70}, (_, i) => { const r = mulberry32(i*977 + 5); return [r(), r()*.9, .5 + r()*1.2, r()*6]; });
 const CLOUDS = Array.from({length: 6}, (_, i) => { const r = mulberry32(i*131 + 9); return {x: r(), y: .12 + r()*.45, s: .7 + r()*.7, v: .6 + r()*.8}; });
-function dayK(){ const tt = ((S.tarT % 120) + 120) % 120; return smooth(58, 68, tt)*(1 - smooth(110, 120, tt)); }
+const tt120 = () => ((S.tarT/DAY_LEN*120) % 120 + 120) % 120;
+function dayK(){ const tt = tt120(); return smooth(58, 68, tt)*(1 - smooth(110, 120, tt)); }
 function drawSky(t, k){
   const {gy, u, sx0, SW, sy0} = L;
   const sk = g.createLinearGradient(0, 0, 0, gy); sk.addColorStop(0, lerpCol('#0c1433', '#4fb0ff', k)); sk.addColorStop(1, lerpCol('#2b3f7a', '#c4ebff', k));
@@ -133,7 +134,7 @@ function drawSky(t, k){
   if (dusk > .02){ const dg = g.createLinearGradient(0, gy*.4, 0, gy); dg.addColorStop(0, 'rgba(255,150,90,0)'); dg.addColorStop(1, `rgba(255,140,80,${.55*dusk})`); g.fillStyle = dg; g.fillRect(0, 0, W, gy); }
   if (k < 1) STARS.forEach(([x, y, s, ph]) => { g.globalAlpha = (1 - k)*(.45 + .55*Math.abs(Math.sin(t*.8 + ph))); g.fillStyle = '#fff'; g.fillRect(x*W, y*gy, s, s); });
   g.globalAlpha = 1;
-  const tt = ((S.tarT % 120) + 120) % 120, arc = gy - sy0;
+  const tt = tt120(), arc = gy - sy0;
   L.moon = null;
   if (tt >= 56){
     const p = clamp((tt - 58)/62, 0, 1), x = sx0 + SW*(.08 + .84*p), y = gy - 20*u - arc*.72*Math.sin(Math.PI*p);

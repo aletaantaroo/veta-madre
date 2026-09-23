@@ -1,8 +1,8 @@
 import { K } from '../core/bus.js';
 import { $, esc, setT } from '../core/dom.js';
 import { clamp, fmtT, money, nf0, smoney } from '../core/format.js';
-import { CATS_IN, CATS_OUT, RES } from '../data/content.js';
-import { LOAN_RATE, capR, capRCost, estRates, isDay, loanLimit, mineCostMult, needs, openedMk, plantCost, plantOut, rPrice, rUnitFmt, repairCost, solarCost, solarOut, taxRate, util, windCost, windOut } from '../game/economy.js';
+import { CATS_IN, CATS_OUT, DAY_LEN, RES } from '../data/content.js';
+import { LOAN_RATE, capR, capRCost, estRates, gameMin, hhmm, isDay, loanLimit, mineCostMult, needs, openedMk, plantCost, plantOut, rPrice, rUnitFmt, repairCost, solarCost, solarOut, taxRate, util, windCost, windOut } from '../game/economy.js';
 import { HEALTH_TXT, health, prodLoss } from '../game/health.js';
 import { S, fac, has, lvReq, maintF, unl } from '../game/state.js';
 import { fitCanvas } from '../render/charts.js';
@@ -50,7 +50,7 @@ export function updateFin(){
   const row = ([k, l]) => { const v = src[k] || 0; return `<tr><td>${l}</td><td class="${v > 0 ? 't-up' : v < 0 ? 't-down' : 'zero'}">${v ? smoney(v) : '—'}</td></tr>`; };
   CATS_IN.forEach(([k]) => tin += src[k] || 0); CATS_OUT.forEach(([k]) => tout += src[k] || 0);
   $('#plTable').innerHTML = `<tr class="grp"><td>Ingresos</td><td>${smoney(tin)}</td></tr>${CATS_IN.map(row).join('')}<tr class="grp"><td>Gastos</td><td>${smoney(tout)}</td></tr>${CATS_OUT.map(row).join('')}<tr class="tot"><td>Resultado</td><td class="${tin+tout >= 0 ? 't-up' : 't-down'}">${smoney(tin + tout)}</td></tr>`;
-  const dp = $('#dayPill'); setT(dp, (isDay() ? `Día · tarifa punta · noche en ${fmtT(120 - S.tarT)}` : `Noche · tarifa valle · día en ${fmtT(60 - S.tarT)}`) + ` · viento ${nf0.format(S.windF*100)} %`); dp.dataset.tone = isDay() ? 'down' : 'up';
+  const dp = $('#dayPill'); setT(dp, (isDay() ? `${hhmm(gameMin())} · tarifa punta hasta las 18:00 (${fmtT(DAY_LEN - S.tarT)})` : `${hhmm(gameMin())} · tarifa valle hasta las 06:00 (${fmtT(DAY_LEN/2 - S.tarT)})`) + ` · viento ${nf0.format(S.windF*100)} %`); dp.dataset.tone = isDay() ? 'down' : 'up';
   const use = {e:N.e, f:N.f, x:N.x};
   ['e','f','x'].forEach(k => {
     const card = $(`[data-res="${k}"]`); if (!card) return; const q = r => card.querySelector(`[data-r="${r}"]`);
