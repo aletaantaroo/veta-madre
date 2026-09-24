@@ -3,7 +3,7 @@ import { $, esc, setT } from '../core/dom.js';
 import { fmtT, money, nf0, nf1, pfmt, weight } from '../core/format.js';
 import { CLIENTS, METALS } from '../data/content.js';
 import { whenTxt } from '../game/economy.js';
-import { MAX_JOBS, TRUST, chainBonus, cliOf, jobKind, trustLv } from '../game/jobs.js';
+import { TRUST, chainBonus, cliOf, jobKind, maxJobs, trustLv } from '../game/jobs.js';
 import { S, unl } from '../game/state.js';
 import { icon, paintIcons } from './icons.js';
 
@@ -61,10 +61,10 @@ export function updateJobsMarket(){
   const full = Math.floor(S.rep), half = S.rep - full >= .5;
   setT($('#stars'), '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(5 - full - (half ? 1 : 0)));
   setT($('#repTxt'), `${nf1.format(S.rep)} de 5 · mejores precios cuanto más alta`);
-  setT($('#jobCount'), `${S.contracts.length} de ${MAX_JOBS}`);
+  setT($('#jobCount'), `${S.contracts.length} de ${maxJobs()}`);
   const ol = $('#offList'), okey = 'k' + S.offers.map(o => o.id).join(',') + '|' + S.contracts.length;
   if (okey !== K.off){ K.off = okey; ol.innerHTML = S.offers.length ? S.offers.map(offerCard).join('') : '<p class="empty">No hay encargos en el tablón. Llegan cada minuto, más o menos.</p>'; paintIcons(ol); }
-  S.offers.forEach(o => { const r = ol.querySelector(`[data-oid="${o.id}"]`); if (!r) return; setT(r.querySelector('[data-r=exp]'), `se va en ${fmtT(o.exp)}`); setT(r.querySelector('[data-r=due]'), whenTxt(o.time)); r.querySelector('[data-act=accept]').classList.toggle('cant', S.contracts.length >= MAX_JOBS); });
+  S.offers.forEach(o => { const r = ol.querySelector(`[data-oid="${o.id}"]`); if (!r) return; setT(r.querySelector('[data-r=exp]'), `se va en ${fmtT(o.exp)}`); setT(r.querySelector('[data-r=due]'), whenTxt(o.time)); r.querySelector('[data-act=accept]').classList.toggle('cant', S.contracts.length >= maxJobs()); });
   const cl = $('#conList'), ckey = 'k' + S.contracts.map(c => c.id).join(',');
   if (ckey !== K.con){ K.con = ckey; cl.innerHTML = S.contracts.length ? S.contracts.map(c => activeCard(c)).join('') : '<p class="empty">Ningún encargo en curso. Acepta uno del tablón.</p>'; }
   tickActive(cl);

@@ -1,6 +1,6 @@
 import { K, emit, queueTut, resetKeys, showSection, toast, updateUI } from '../core/bus.js';
 import { fmtHMS, money } from '../core/format.js';
-import { ACH, MILESTONES, OBJ, PERKS, SKILLS, UNLOCKS, runT } from '../data/content.js';
+import { ACH, MILESTONES, OBJ, PERKS, SKILLS, SYNERGIES, UNLOCKS, runT, syn } from '../data/content.js';
 import { openedMk, rec } from './economy.js';
 import { warmMarkets } from './market.js';
 import { S, bizTotal, clickEq, fresh, gps, has, legAvail, legacyGain, lvReq, mk, physPrice, save, setS, sk, xpNeed } from './state.js';
@@ -72,11 +72,16 @@ export function checkAch(){
 
 
 /* ---- habilidades y prestigio ---- */
+export const skillReady = s => s.req.every(sk) && (!s.reqAny || s.reqAny.some(sk));
 export function learn(id){
   const s = SKILLS.find(x=>x.id===id); if (!s || sk(id)) return;
-  if (!s.req.every(sk)){ toast('Primero aprende las habilidades anteriores de la rama.'); return; }
+  const rival = s.ex && SKILLS.find(o => o.ex === s.ex && o.id !== id && sk(o.id));
+  if (rival){ toast(`Ya elegiste «${rival.name}». Son excluyentes: reasigna los puntos si quieres cambiar.`); return; }
+  if (!skillReady(s)){ toast(s.reqAny ? 'Antes elige una de las dos habilidades de la fila de arriba.' : 'Primero aprende las habilidades anteriores de la rama.'); return; }
   if (S.sp < s.cost){ toast(`Necesitas ${s.cost} puntos. Subes de nivel ganando experiencia.`); return; }
+  const synBefore = SYNERGIES.filter(x => syn(x.id)).map(x => x.id);
   S.sp -= s.cost; S.skills[id] = true;
+  SYNERGIES.filter(x => syn(x.id) && !synBefore.includes(x.id)).forEach(x => { toast(`¡Sinergia activada: ${x.name}! ${x.desc}`, 'ach'); if (!silent) emit('synergy', x); });
   toast(`Habilidad aprendida: ${s.name}`, 'up'); log(`Habilidad: ${s.name}`, 'up'); updateUI();
 }
 export function respec(){

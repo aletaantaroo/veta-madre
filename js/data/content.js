@@ -118,7 +118,7 @@ export const UNLOCKS = [
   {lv:2,  key:'logros',    sec:'logros',   txt:'Logros y estadísticas'},
   {lv:3,  key:'mercado',   sec:'mercado',  txt:'Mercado: gráfico de precios'},
   {lv:4,  key:'finanzas',  sec:'finanzas', txt:'Finanzas: tus cuentas'},
-  {lv:5,  key:'contracts', txt:'Contratos con clientes'},
+  {lv:5,  key:'contracts', txt:'Encargos de clientes'},
   {lv:6,  key:'minigames', sec:'minijuegos', txt:'Minijuegos: apuesta, vagoneta y voladura'},
   {lv:7,  key:'loans',     txt:'Préstamos bancarios'},
   {lv:8,  key:'ag',        txt:'Yacimiento de plata'},
@@ -130,6 +130,7 @@ export const UNLOCKS = [
   {lv:21, key:'ipo',       txt:'Sacar tus empresas a bolsa'},
   {lv:22, key:'prestige',  txt:'Vender la compañía con bonus'},
 ];
+/* Árbol de habilidades. t: fila (0 arriba). req: todas; reqAny: basta una. ex: grupo excluyente (solo una del grupo). */
 export const SKILLS = [
   {b:'m', id:'m1', t:0, name:'Brazo fuerte', desc:'Golpes +50 %.', cost:1, req:[]},
   {b:'m', id:'m2', t:1, name:'Ojo para la veta', desc:'Las pepitas salen más a menudo y valen el doble.', cost:1, req:['m1']},
@@ -138,13 +139,19 @@ export const SKILLS = [
   {b:'m', id:'m5', t:2, name:'Turnos dobles', desc:'Producción del equipo +30 %.', cost:3, req:['m3']},
   {b:'m', id:'m6', t:3, name:'Geología avanzada', desc:'La plata y el cobre rinden un 25 % más.', cost:3, req:['m5']},
   {b:'m', id:'m7', t:3, name:'Veta madre', desc:'Producción del equipo ×1,5.', cost:5, req:['m5','m2']},
+  {b:'m', id:'m8', t:4, ex:'m-x', name:'Pozo profundo', desc:'El frente baja mucho más rápido: llegas antes a los hallazgos hondos.', cost:4, req:['m7']},
+  {b:'m', id:'m9', t:4, ex:'m-x', name:'Cantera a cielo abierto', desc:'Buscadores, mineros y vagonetas producen el triple.', cost:4, req:['m7']},
+  {b:'m', id:'m10', t:5, cap:true, name:'Leyenda del pico', desc:'Producción ×1,5 y las cajas fuertes guardan el doble.', cost:6, req:[], reqAny:['m8','m9']},
   {b:'t', id:'t1', t:0, name:'Buen regateo', desc:'La comisión al vender metal baja un 40 %.', cost:1, req:[]},
   {b:'t', id:'t2', t:1, name:'Lectura del mercado', desc:'El diferencial del trading se reduce a la mitad.', cost:1, req:['t1']},
-  {b:'t', id:'t3', t:1, name:'Contactos', desc:'Los contratos pagan un 3 % más y llegan antes.', cost:2, req:['t1']},
+  {b:'t', id:'t3', t:1, name:'Contactos', desc:'Los encargos pagan un 3 % más y llegan antes.', cost:2, req:['t1']},
   {b:'t', id:'t4', t:2, name:'Fuentes fiables', desc:'Tu informante acierta 9 de cada 10 veces.', cost:2, req:['t2']},
   {b:'t', id:'t5', t:2, name:'Espía en la competencia', desc:'Ves cuánto oro acumula Minas del Cierzo antes de soltarlo.', cost:2, req:['t3']},
   {b:'t', id:'t6', t:3, name:'Sangre fría', desc:'Desbloquea el apalancamiento 1:50.', cost:3, req:['t2']},
   {b:'t', id:'t7', t:3, name:'Lobo de la bolsa', desc:'Sin comisiones en bolsa y dividendos +50 %.', cost:4, req:['t4','t5']},
+  {b:'t', id:'t8', t:4, ex:'t-x', name:'Cartera de clientes', desc:'Llevas 4 encargos a la vez y los clientes te cogen confianza el doble de rápido.', cost:4, req:['t7']},
+  {b:'t', id:'t9', t:4, ex:'t-x', name:'Especulador', desc:'«Sube o baja» paga ×2 en vez de ×1,9 y puedes apostar el triple.', cost:4, req:['t7']},
+  {b:'t', id:'t10', t:5, cap:true, name:'Magnate del metal', desc:'Vendes tu metal un 10 % más caro y tus ventas grandes mueven la mitad el precio.', cost:6, req:[], reqAny:['t8','t9']},
   {b:'e', id:'e1', t:0, name:'Emprendedor', desc:'Abrir y mejorar empresas cuesta un 15 % menos.', cost:1, req:[]},
   {b:'e', id:'e2', t:1, name:'Buen jefe', desc:'Ingresos de empresas +25 %.', cost:1, req:['e1']},
   {b:'e', id:'e3', t:1, name:'Delegar', desc:'Los gerentes cuestan la mitad.', cost:2, req:['e1']},
@@ -152,12 +159,36 @@ export const SKILLS = [
   {b:'e', id:'e5', t:2, name:'Marketing', desc:'Ingresos de empresas +40 %.', cost:3, req:['e2','e3']},
   {b:'e', id:'e6', t:3, name:'Banca de inversión', desc:'Sacar una empresa a bolsa te da un 30 % más de dinero.', cost:3, req:['e5']},
   {b:'e', id:'e7', t:3, name:'Magnate', desc:'Ingresos de empresas ×1,5.', cost:5, req:['e5','e4']},
+  {b:'e', id:'e8', t:4, ex:'e-x', name:'Franquicias', desc:'Abrir y mejorar empresas cuesta un 30 % menos (además de Emprendedor).', cost:4, req:['e7']},
+  {b:'e', id:'e9', t:4, ex:'e-x', name:'Monopolio', desc:'Tu empresa de más nivel produce el triple.', cost:4, req:['e7']},
+  {b:'e', id:'e10', t:5, cap:true, name:'Imperio', desc:'Cada empresa abierta suma un 5 % a la producción de la mina.', cost:6, req:[], reqAny:['e8','e9']},
+  {b:'o', id:'o1', t:0, name:'Buen ambiente', desc:'La moral se recupera el doble de rápido y una nómina impagada la baja la mitad.', cost:1, req:[]},
+  {b:'o', id:'o2', t:1, name:'Ahorro energético', desc:'Las máquinas gastan un 20 % menos de energía.', cost:1, req:['o1']},
+  {b:'o', id:'o3', t:1, name:'Mantenimiento preventivo', desc:'La maquinaria se desgasta un 40 % menos.', cost:2, req:['o1']},
+  {b:'o', id:'o4', t:2, name:'Logística', desc:'Combustible y explosivos: un 25 % menos de consumo.', cost:2, req:['o2']},
+  {b:'o', id:'o5', t:2, name:'Horas extra', desc:'Una ficha más al día para los minijuegos (4 en total).', cost:3, req:['o3']},
+  {b:'o', id:'o6', t:3, name:'Negociador', desc:'Las nóminas cuestan un 20 % menos.', cost:3, req:['o4']},
+  {b:'o', id:'o7', t:3, name:'Turno de noche', desc:'De noche (de 18:00 a 06:00) la mina produce un 25 % más.', cost:4, req:['o4','o5']},
+  {b:'o', id:'o8', t:4, ex:'o-x', name:'Autonomía energética', desc:'Paneles y aerogeneradores producen el doble.', cost:4, req:['o7']},
+  {b:'o', id:'o9', t:4, ex:'o-x', name:'Contrato con la eléctrica', desc:'Pagas la luz siempre a tarifa valle, también de día.', cost:4, req:['o7']},
+  {b:'o', id:'o10', t:5, cap:true, name:'Jefe de obra legendario', desc:'La maquinaria ya no se desgasta y la moral nunca baja del 60 %.', cost:6, req:[], reqAny:['o8','o9']},
 ];
 export const BRANCHES = [
-  {k:'m', name:'Minero', desc:'Más producción, mejores pepitas y almacenes más baratos.'},
-  {k:'t', name:'Trader', desc:'Menos costes al vender y operar, y mejor información.'},
-  {k:'e', name:'Empresario', desc:'Empresas más baratas y rentables.'},
+  {k:'m', name:'Minero', col:'orange', ico:'pick', desc:'Más producción, mejores pepitas y almacenes más baratos.'},
+  {k:'t', name:'Comerciante', col:'blue', ico:'chart', desc:'Vender mejor, encargos, información y trading.'},
+  {k:'e', name:'Empresario', col:'purple', ico:'factory', desc:'Empresas más baratas y rentables.'},
+  {k:'o', name:'Jefe de obra', col:'green', ico:'helmet', desc:'Plantilla, energía, mantenimiento y noches productivas.'},
 ];
+/* Combinaciones entre ramas que dan un extra cuando tienes las dos habilidades. */
+export const SYNERGIES = [
+  {id:'joyero',  name:'Joyero de la casa',     req:['m2','e4'], desc:'La joyería paga un 20 % más por tu oro.'},
+  {id:'pico',    name:'Pico y pala',           req:['m5','o7'], desc:'Producción de la mina +15 %.'},
+  {id:'equipo',  name:'Trabajo en equipo',     req:['m3','o1'], desc:'Nóminas un 10 % más baratas.'},
+  {id:'cautivo', name:'Mercado cautivo',       req:['t3','e2'], desc:'Los encargos pagan un 5 % más.'},
+  {id:'cadena',  name:'Cadena de suministro',  req:['e5','o4'], desc:'Ingresos de empresas +15 %.'},
+  {id:'wall',    name:'Lobo de Wall Street',   req:['t7','e6'], desc:'Dividendos +25 %.'},
+];
+export const syn = id => { const X = SYNERGIES.find(x => x.id === id); return !!X && X.req.every(r => S.skills && S.skills[r]); };
 export const BIZ = [
   {id:'joyeria',    name:'Joyería',            lv:12, cost:5000,  inc:4,     desc:'Convierte tu oro en joyas y las vende un 30 % por encima del spot. Consume oro de tu almacén.'},
   {id:'refineria',  name:'Refinería',          lv:13, cost:25000, inc:70,    desc:'Cada nivel sube un 2 % el precio al que vendes tu metal físico (hasta +40 %).'},
@@ -217,7 +248,8 @@ export const ACH = [
   {id:'a_div',    name:'Vivir de rentas', desc:'Cobra 10.000 € en dividendos.', test:()=>S.divs>=1e4},
   {id:'a_lv10',   name:'Veterano', desc:'Llega al nivel 10.', test:()=>S.level>=10},
   {id:'a_lv25',   name:'Leyenda de la mina', desc:'Llega al nivel 25.', test:()=>S.level>=25},
-  {id:'a_branch', name:'Especialista', desc:'Completa una rama del árbol de habilidades.', test:()=>BRANCHES.some(B=>SKILLS.filter(s=>s.b===B.k).every(s=>S.skills[s.id]))},
+  {id:'a_branch', name:'Especialista', desc:'Completa una rama del árbol de habilidades (con su habilidad maestra).', test:()=>BRANCHES.some(B=>SKILLS.filter(s=>s.b===B.k).every(s=>S.skills[s.id] || (s.ex && SKILLS.some(o=>o.ex===s.ex && S.skills[o.id]))))},
+  {id:'a_syn3',   name:'Todo encaja', desc:'Activa 3 sinergias del árbol de habilidades.', test:()=>SYNERGIES.filter(x=>syn(x.id)).length>=3},
   {id:'a_prest',  name:'Borrón y cuenta nueva', desc:'Vende tu compañía y empieza de nuevo con bonus.', test:()=>S.prestiges>=1},
 ];
 
@@ -280,7 +312,7 @@ export const TUTS = {
   broker:    {t:'Nuevo: trading', sec:'minijuegos', mg:'trade', s:['<b>Largo</b> gana si el precio sube; <b>corto</b>, si baja.','El apalancamiento multiplica ganancias y pérdidas.','Pon un <b>stop loss</b> para limitar lo que puedes perder.']},
   agente:    {t:'Nuevo: órdenes', sec:'mercado', desk:'ord', s:['Deja ventas programadas para cuando el precio llegue a donde quieras.','Activa la venta automática para que tu almacén nunca se quede lleno.']},
   analista:  {t:'Nuevo: analista', sec:'mercado', s:['La <b>media móvil</b> (línea azul) muestra la tendencia.','El aviso bajo el gráfico te dice si el precio está alto o bajo respecto a su media.']},
-  skills:    {t:'Puntos de habilidad', sec:'habilidades', s:['Cada nivel te da puntos. Gástalos en el árbol: Minero, Trader o Empresario.','No llegan para todo: elige un estilo. Puedes reasignarlos pagando.']},
+  skills:    {t:'Puntos de habilidad', sec:'habilidades', s:['Cada nivel te da puntos. Gástalos en cuatro ramas: Minero, Comerciante, Empresario y Jefe de obra.','Abajo de cada rama hay una <b>elección</b>: o una o la otra. Y al final, una habilidad maestra.','Algunas parejas de habilidades de ramas distintas activan <b>sinergias</b>.']},
   legacy:    {t:'Tienda de legado', sec:'logros', s:['Tus lingotes están en la tienda de legado, en la sección Logros.','Las ventajas se quedan para todas tus compañías futuras.']},
 };
 

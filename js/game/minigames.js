@@ -3,15 +3,15 @@ import { money } from '../core/format.js';
 import { METALS } from '../data/content.js';
 import { estRates, rec } from './economy.js';
 import { earn, log, refIncome, silent } from './progress.js';
-import { S, clickEq, mk, unl } from './state.js';
+import { S, clickEq, mk, sk, unl } from './state.js';
 
 /* ================= minijuegos: fichas, premios y la apuesta «sube o baja» =================
    La vagoneta y la voladura gastan una ficha (3 al día, se recargan a medianoche) y pagan en
    «segundos de producción», así el premio crece con tu mina sin romper la economía.
    La apuesta se juega con tu caja, con un tope para que siga siendo un juego. */
-export const MG_TICKETS = 3;
-export const BET_PAY = 1.9;
-export function mgState(){ return (S.mg ||= {tk: MG_TICKETS, best: {}, plays: {}, bets: []}); }
+export const maxTickets = () => sk('o5') ? 4 : 3;
+export const betPay = () => sk('t9') ? 2 : 1.9;
+export function mgState(){ return (S.mg ||= {tk: maxTickets(), best: {}, plays: {}, bets: []}); }
 export const tickets = () => mgState().tk;
 export function useTicket(game){
   const G = mgState(); if (G.tk <= 0) return false;
@@ -27,10 +27,10 @@ export function mgPay(game, sec, score){
   K.mg = ''; updateUI();
   return v;
 }
-on('newDay', () => { const G = mgState(); if (G.tk < MG_TICKETS){ G.tk = MG_TICKETS; K.mg = ''; if (unl('minigames')) toast(`Nuevas fichas para los minijuegos: ${MG_TICKETS}`, 'up'); } });
+on('newDay', () => { const G = mgState(); if (G.tk < maxTickets()){ G.tk = maxTickets(); K.mg = ''; if (unl('minigames')) toast(`Nuevas fichas para los minijuegos: ${maxTickets()}`, 'up'); } });
 
 /* ---- sube o baja ---- */
-export const betCap = () => Math.max(20, refIncome()*300);
+export const betCap = () => Math.max(20, refIncome()*300)*(sk('t9') ? 3 : 1);
 export function placeBet(m, dir, stake, dur){
   const G = mgState();
   if (G.bet) return 'Ya tienes una apuesta en marcha.';
@@ -49,7 +49,7 @@ function settleBet(){
   const end = mk(b.m).price, diff = end - b.entry, win = b.dir > 0 ? diff > 0 : diff < 0;
   let pay = 0;
   if (diff === 0){ pay = b.stake; S.money += pay; rec('otros', pay); }
-  else if (win){ pay = b.stake*BET_PAY; earn(pay, 0, 'otros'); }
+  else if (win){ pay = b.stake*betPay(); earn(pay, 0, 'otros'); }
   G.bets.unshift({t: Date.now(), m: b.m, dir: b.dir, stake: b.stake, pay, entry: b.entry, end}); if (G.bets.length > 8) G.bets.length = 8;
   G.bet = null; K.mg = '';
   const txt = diff === 0 ? `Apuesta empatada: recuperas ${money(pay)}` : win ? `¡Acertaste! El ${METALS[b.m].low} ${b.dir > 0 ? 'subió' : 'bajó'}: cobras ${money(pay)}` : `Fallaste: el ${METALS[b.m].low} ${diff > 0 ? 'subió' : 'bajó'} y pierdes ${money(b.stake)}`;

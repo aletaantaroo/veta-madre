@@ -3,7 +3,7 @@ import { $, $$, dpr, setT } from '../core/dom.js';
 import { money, mulberry32, nf1, nf2, pfmt, rgba } from '../core/format.js';
 import { METALS, MK } from '../data/content.js';
 import { hhmm } from '../game/economy.js';
-import { BET_PAY, MG_TICKETS, betCap, mgPay, mgState, placeBet, tickets, useTicket } from '../game/minigames.js';
+import { betCap, betPay, maxTickets, mgPay, mgState, placeBet, tickets, useTicket } from '../game/minigames.js';
 import { S, has, lvReq, mk, unl } from '../game/state.js';
 import { fitCanvas, resetHover } from '../render/charts.js';
 import { cart, miner, nuggetSprite } from '../render/sprites.js';
@@ -36,7 +36,7 @@ function cardsHtml(){
     </button>`;
   }).join('');
 }
-function tkTxt(){ const t = tickets(); return `Fichas: ${'●'.repeat(t)}${'○'.repeat(Math.max(0, MG_TICKETS - t))} · se recargan a medianoche (${hhmm(0)} del Día ${(S.day || 0) + 1})`; }
+function tkTxt(){ const t = tickets(); return `Fichas: ${'●'.repeat(t)}${'○'.repeat(Math.max(0, maxTickets() - t))} · se recargan a medianoche (${hhmm(0)} del Día ${(S.day || 0) + 1})`; }
 function openGame(id){
   if (id === 'trade' && !tradeOpen()){ toast(unl('trading') ? 'Compra la Cuenta en un bróker (Tienda → Mejoras → Mercado) para operar.' : `El trading se abre en el nivel ${lvReq('trading')}.`); return; }
   if (view !== id) bankUnfinished();
@@ -59,7 +59,7 @@ function openGameQuiet(id){ view = id; Object.entries(VIEWS).forEach(([k, sel]) 
 
 export function updateMinigames(){
   const G = mgState();
-  setT($('#mgMeta'), `Fichas ${G.tk}/${MG_TICKETS}`);
+  setT($('#mgMeta'), `Fichas ${G.tk}/${maxTickets()}`);
   if (view === 'menu'){
     const key = [G.tk, G.bet ? 1 : 0, G.bets.length, G.best.cart, G.best.blast, G.best.blast_dificil, G.best.blast_experto, tradeOpen(), S.positions.length, S.trades, S.level].join('|');
     if (key !== K.mg){ K.mg = key; $('#mgCards').innerHTML = cardsHtml(); }
@@ -112,7 +112,7 @@ function updateBet(){
   if (b){
     const d = s.price - b.entry, good = b.dir > 0 ? d > 0 : d < 0;
     live.dataset.state = d === 0 ? '' : good ? 'win' : 'lose';
-    live.innerHTML = `<b>${b.dir > 0 ? '▲ Sube' : '▼ Baja'} · ${money(b.stake)}</b><span>Desde ${pfmt(b.m, b.entry)} · ahora ${pfmt(b.m, s.price)}</span><span class="bl-big">${d === 0 ? 'Igual' : good ? `Vas ganando: ${money(b.stake*BET_PAY)}` : 'Vas perdiendo'}</span><span class="bl-t">Quedan ${b.left} s</span><span class="bar"><i style="width:${(b.left/b.dur*100).toFixed(1)}%"></i></span>`;
+    live.innerHTML = `<b>${b.dir > 0 ? '▲ Sube' : '▼ Baja'} · ${money(b.stake)}</b><span>Desde ${pfmt(b.m, b.entry)} · ahora ${pfmt(b.m, s.price)}</span><span class="bl-big">${d === 0 ? 'Igual' : good ? `Vas ganando: ${money(b.stake*betPay())}` : 'Vas perdiendo'}</span><span class="bl-t">Quedan ${b.left} s</span><span class="bar"><i style="width:${(b.left/b.dur*100).toFixed(1)}%"></i></span>`;
   }
   const hk = G.bets.map(x => x.t).join();
   if (hk !== K.betHist){ K.betHist = hk; $('#betHist').innerHTML = G.bets.length ? G.bets.map(x => `<li class="${x.pay > x.stake ? 't-up' : x.pay === x.stake ? '' : 't-down'}">${x.dir > 0 ? '▲' : '▼'} ${METALS[x.m].name} · ${money(x.stake)} → ${x.pay > x.stake ? '+' + money(x.pay - x.stake) : x.pay === x.stake ? 'empate' : '−' + money(x.stake)}</li>`).join('') : '<li class="empty">Aún no has apostado.</li>'; }

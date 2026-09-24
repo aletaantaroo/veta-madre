@@ -1,6 +1,6 @@
 import { K, bump, emit, sfx, toast, updateUI } from '../core/bus.js';
 import { money, niceRound, pfmt, pick, rnd, weight } from '../core/format.js';
-import { CLIENTS, JOB_KINDS, METALS } from '../data/content.js';
+import { CLIENTS, JOB_KINDS, METALS, syn } from '../data/content.js';
 import { rec } from './economy.js';
 import { earn, log, silent } from './progress.js';
 import { S, cap, clickEq, gpsEq, metalConv, mk, setDone, sk, unl } from './state.js';
@@ -16,7 +16,7 @@ const cliRec = id => ((S.cli ||= {})[id] ||= {n: 0, fail: 0});
 export function trustLv(id){ const n = id && S.cli && S.cli[id] ? S.cli[id].n : 0; return n >= 12 ? 3 : n >= 6 ? 2 : n >= 2 ? 1 : 0; }
 export const TRUST = ['Nuevo cliente', 'Conocido', 'Habitual', 'De toda la vida'];
 export const jobKind = o => JOB_KINDS[o.kind] || JOB_KINDS.normal;
-export const MAX_JOBS = 3;
+export const maxJobs = () => sk('t8') ? 4 : 3;
 /* Metal apartado para los encargos en curso: las ventas no lo tocan. */
 export const reserved = m => (S.contracts || []).reduce((a, c) => a + (c.m === m ? c.g : 0), 0);
 
@@ -30,7 +30,7 @@ function pickKind(C){
   return 'normal';
 }
 function premFor(C, J){
-  return rnd(...J.prem) + (C.prem || 0) + S.rep*0.008 + trustLv(C.id)*0.02 + (sk('t3') ? .03 : 0) + (S.perks.p_clients ? .05 : 0) + (setDone('his') ? .10 : 0);
+  return rnd(...J.prem) + (C.prem || 0) + S.rep*0.008 + trustLv(C.id)*0.02 + (sk('t3') ? .03 : 0) + (S.perks.p_clients ? .05 : 0) + (setDone('his') ? .10 : 0) + (syn('cautivo') ? .05 : 0);
 }
 function stepQty(m, J, step){ return niceRound(Math.min(baseQty(m)*rnd(...J.mult)*(J.steps ? [1, 1.4, 1.9][step] : 1), cap(m)*0.9)); }
 function makeOffer(){
@@ -63,7 +63,7 @@ function failJob(c){
 }
 export function acceptOffer(id){
   const o = S.offers.find(x => x.id === id); if (!o) return;
-  if (S.contracts.length >= MAX_JOBS){ toast(`Tienes ${MAX_JOBS} encargos en curso. Entrega alguno antes de aceptar más.`); return; }
+  if (S.contracts.length >= maxJobs()){ toast(`Tienes ${maxJobs()} encargos en curso. Entrega alguno antes de aceptar más.`); return; }
   S.offers.splice(S.offers.indexOf(o), 1);
   S.contracts.push({id: o.id, cid: o.cid, m: o.m, client: o.client, kind: o.kind || 'normal', g: o.g, price: o.price, prem: o.prem, pen: o.pen, left: o.time, time: o.time, step: o.step, steps: o.steps, paid: 0});
   log(`Aceptas entregar ${weight(o.g)} de ${METALS[o.m].low} a ${o.client} a ${pfmt(o.m, o.price)}`);
@@ -96,7 +96,7 @@ export function deliver(id){
     }
   }
   if (c.cid){
-    const before = trustLv(c.cid); cliRec(c.cid).n++;
+    const before = trustLv(c.cid); cliRec(c.cid).n += sk('t8') ? 2 : 1;
     const after = trustLv(c.cid);
     if (after > before) toast(`${c.client} ya te considera «${TRUST[after]}»: mejores precios${after === 1 ? ' y pedidos en cadena' : ''}`, 'lv');
   }

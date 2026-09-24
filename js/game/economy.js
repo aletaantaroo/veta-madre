@@ -1,9 +1,9 @@
 import { emit, toast, updateUI } from '../core/bus.js';
 import { clamp, gauss, money, nf0, nf2, nf3 } from '../core/format.js';
-import { BIZ, CREW, DAY_LEN, METALS, MK, RES } from '../data/content.js';
+import { BIZ, CREW, DAY_LEN, METALS, MK, RES, syn } from '../data/content.js';
 import { sell } from './market.js';
 import { earn, log, silent, xpMoney } from './progress.js';
-import { S, bizInc, bizMult, bizTotal, cap, crewMult, fac, gps, has, jewelPrice, jewelRate, metalConv, mk, ownFrac, physPrice, prodMult, unl } from './state.js';
+import { S, bizInc, bizMult, bizTotal, cap, crewMult, fac, gps, has, jewelPrice, jewelRate, metalConv, mk, ownFrac, physPrice, prodMult, sk, unl } from './state.js';
 
 /* ================= operaciones: recursos, gastos, finanzas ================= */
 
@@ -24,23 +24,25 @@ function advanceClock(dt){
   if ((a < mid && b >= mid) || (a < mid + DAY_LEN && b >= mid + DAY_LEN)){ S.day = (S.day || 0) + 1; if (!silent) emit('newDay', S.day); }
   S.tarT = b % DAY_LEN;
 }
-const ePrice = () => (isDay() ? .20 : .08)*Math.exp(S.px.ex);
+const ePrice = () => (isDay() && !sk('o9') ? .20 : .08)*Math.exp(S.px.ex);
 const fPrice = () => 1.2*Math.exp(S.px.fx);
 const xPrice = () => 6*Math.exp(S.px.xx);
 export const rPrice = k => k === 'e' ? ePrice() : k === 'f' ? fPrice() : xPrice();
 export const rUnitFmt = (k,p) => (k === 'e' ? nf3.format(p) : nf2.format(p)) + ' €/' + RES[k].unit;
-export const solarOut = () => isDay() ? S.solar*100 : 0;
+export const solarOut = () => isDay() ? S.solar*100*(sk('o8') ? 2 : 1) : 0;
 const perkHalf = () => S.perks && S.perks.p_plants ? .5 : 1;
 export const solarCost = () => 15000*Math.pow(1.15, S.solar)*perkHalf();
-export const windOut = () => S.wind*80*S.windF;
+export const windOut = () => S.wind*80*S.windF*(sk('o8') ? 2 : 1);
 export const windCost = () => 25000*Math.pow(1.15, S.wind)*perkHalf();
 export const plantCost = k => (k === 'f' ? 40000 : 35000)*Math.pow(1.15, k === 'f' ? S.plants.bio : S.plants.fab)*perkHalf();
 export const plantOut = k => k === 'f' ? S.plants.bio*20 : S.plants.fab*4;
 const plantsOn = () => ({bio: S.res.f < capR('f') ? S.plants.bio : 0, fab: S.res.x < capR('x') ? S.plants.fab : 0});
-const effE = () => has('u_ahorro') ? .75 : 1;
+const effE = () => (has('u_ahorro') ? .75 : 1)*(sk('o2') ? .8 : 1);
+const salF = () => (sk('o6') ? .8 : 1)*(syn('equipo') ? .9 : 1);
+const supF = () => sk('o4') ? .75 : 1;
 export function needs(){
   let e=0, f=0, x=0, sal=0, mv=0;
-  CREW.forEach(c => { const n = S.owned[c.id]||0; if (!n) return; const v = c.gps*80*n; sal += v*c.sal; if (c.e){ e += v*effE(); mv += n*c.cost; } if (c.f) f += v*.1/1.2; if (c.x) x += v*.08/6; });
+  CREW.forEach(c => { const n = S.owned[c.id]||0; if (!n) return; const v = c.gps*80*n; sal += v*c.sal*salF(); if (c.e){ e += v*effE(); mv += n*c.cost; } if (c.f) f += v*.1/1.2*supF(); if (c.x) x += v*.08/6*supF(); });
   return {e, f, x, sal, mv};
 }
 export const repairCost = () => (100 - S.maint)/100*needs().mv*0.03;
@@ -76,7 +78,7 @@ function payday(total){
   const p = Math.min(owed, Math.max(0, S.money));
   S.money -= p; rec('nominas', -p); S.arrears = owed - p;
   if (S.arrears > 0.01){
-    S.unpaid = true; S.moral = Math.max(0, S.moral - 25);
+    S.unpaid = true; S.moral = Math.max(sk('o10') ? 60 : 0, S.moral - (sk('o1') ? 12 : 25));
     const msg = S.moral <= 0 ? `Huelga: la plantilla trabaja al mínimo hasta que pagues ${money(S.arrears)} de atrasos` : `No llegas a pagar las nóminas: debes ${money(S.arrears)} y la moral baja al ${nf0.format(S.moral)} %`;
     toast(msg, 'down'); log(msg, 'down');
   } else { S.arrears = 0; if (total > 0) S.moral = Math.min(100, S.moral + (has('u_comedor') ? 25 : 10)); }
@@ -116,7 +118,7 @@ function econStep(dt){
     if (fill >= .9 || (fill >= .2 && sm.price >= mean*(1 + S.autoMine.th))){ sell(m, fill >= .9 ? .5 : .35, 'Venta automática de la mina'); S.autoMineT[m] = fill >= .9 ? 2 : 8; }
   });
   if (N.mv > 0){
-    const dec = dt/12*(has('u_taller') ? .5 : 1)*util;
+    const dec = dt/12*(has('u_taller') ? .5 : 1)*(sk('o3') ? .6 : 1)*(sk('o10') ? 0 : 1)*util;
     if (S.maintAuto){ if (S.maint < 100){ const c2 = repairCost(); spendOrDebt(c2*1.2, 'mantenimiento'); S.maint = 100; } spendOrDebt(dec/100*N.mv*0.03*1.2, 'mantenimiento'); }
     else S.maint = Math.max(0, S.maint - dec);
   }
@@ -124,7 +126,8 @@ function econStep(dt){
   const jr = jewelRate();
   if (jr && S.stock.au > 0){ const used = Math.min(S.stock.au, jr*dt); S.stock.au -= used; earn(used*jewelPrice()*ownFrac(BIZ[0]), .03, 'empresas'); }
   if (S.debt > 0) spendOrDebt(S.debt*LOAN_RATE/60*dt, 'intereses');
-  if (S.arrears <= 0) S.moral = Math.min(100, S.moral + dt/30);
+  if (S.arrears <= 0) S.moral = Math.min(100, S.moral + dt/(sk('o1') ? 15 : 30));
+  if (sk('o10') && S.moral < 60) S.moral = 60;
   if ((S.payT -= dt) <= 0){ S.payT += 60; payday(N.sal*60); }
   if (unl('taxes') && (S.taxT -= dt) <= 0){
     S.taxT += 300; const tax = Math.max(0, S.taxBase)*taxRate();
@@ -152,7 +155,7 @@ export function estRates(){
   const inc = openedMk().reduce((a,m) => a + (S.stock[m] < cap(m) ? gps(m)*physPrice(m) : 0), 0) + bizTotal();
   const PO = plantsOn(), eGrid = Math.max(0, N.e*fac.e + PO.bio*60 + PO.fab*40 - solarOut() - windOut());
   const exp = N.sal + eGrid*ePrice() + Math.max(0, N.f*fac.f - PO.bio*20)*fPrice() + Math.max(0, N.x*fac.x - PO.fab*4)*xPrice() + bizFixedTotal() + S.debt*LOAN_RATE/60
-    + (S.maintAuto && N.mv ? (1/12)*(has('u_taller')?.5:1)*u/100*N.mv*.03*1.2 : 0);
+    + (S.maintAuto && N.mv ? (1/12)*(has('u_taller')?.5:1)*(sk('o3')?.6:1)*(sk('o10')?0:1)*u/100*N.mv*.03*1.2 : 0);
   return {inc, exp, net: inc - exp};
 }
 export function buyRes(k){

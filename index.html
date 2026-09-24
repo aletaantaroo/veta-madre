@@ -145,7 +145,7 @@
               <div class="seg metal" id="betSeg" aria-label="Metal"></div>
               <div class="bet-price"><span id="betName">Oro</span><b id="betPrice">—</b><span class="chg" id="betChg">—</span></div>
               <div class="monitor"><div class="chart-wrap short"><canvas id="betChart" role="img" aria-label="Precio de los últimos segundos"></canvas></div></div>
-              <p class="fine">Aciertas si al acabar el tiempo el precio está por encima (sube) o por debajo (baja) del de ahora. Si aciertas cobras 1,9 veces lo apostado.</p>
+              <p class="fine">Aciertas si al acabar el tiempo el precio está por encima (sube) o por debajo (baja) del de ahora. Si aciertas cobras 1,9 veces lo apostado (2 veces con la habilidad Especulador).</p>
             </div>
             <div class="panel">
               <div class="field"><label for="betStake">Apuesta (€)</label><input id="betStake" type="number" min="0" step="any" inputmode="decimal"><div class="presets" id="betPresets"><button type="button" data-f="0.01">1 %</button><button type="button" data-f="0.05">5 %</button><button type="button" data-f="0.1">10 %</button><button type="button" data-f="max">Máx</button></div><span class="fine" id="betCap">—</span></div>
@@ -477,7 +477,10 @@
       <header class="win-head"><span class="win-ico" data-icon="star"></span><h2>Árbol de habilidades</h2><button type="button" class="win-x" data-go="mina" aria-label="Cerrar">×</button></header>
       <div class="win-body">
         <div class="sp-box"><span class="sp-num" id="spNum">0</span><span class="info" id="spTxt">puntos por gastar. Ganas 1 por nivel y 2 en los niveles múltiplos de 5.</span><div class="confirm" id="respecBox"></div></div>
-        <div class="tree" id="tree"></div>
+        <div class="br-tabs" id="brTabs" role="tablist" aria-label="Ramas"></div>
+        <div class="tree2" id="tree"></div>
+        <h3 class="sub-h">Sinergias <span class="meta">dos habilidades de ramas distintas que juntas dan un extra</span></h3>
+        <div class="syn-list" id="synList"></div>
         <h3 class="sub-h">Lo que desbloqueas al subir de nivel</h3>
         <ul class="road" id="road"></ul>
       </div>
