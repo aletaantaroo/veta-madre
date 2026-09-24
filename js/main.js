@@ -39,6 +39,7 @@ import './ui/museum.js';
 import './ui/findcard.js';
 import './ui/guide.js';
 import './ui/minigames.js';
+import './ui/city.js';
 import './render/scene.js';
 import './render/charts.js';
 

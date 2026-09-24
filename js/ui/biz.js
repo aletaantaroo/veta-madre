@@ -1,8 +1,10 @@
+import { K } from '../core/bus.js';
 import { $, setT } from '../core/dom.js';
 import { fmtT, money, nf0, nf1, weight } from '../core/format.js';
 import { BIZ } from '../data/content.js';
 import { S, bizCost, bizCount, bizFull, bizInc, bizLvl, bizMult, bizTotal, jewelPrice, jewelRate, lvReq, mgrCost, ownFrac, refineBonus, sk, unl } from '../game/state.js';
 import { building, cloud, tree } from '../render/sprites.js';
+import { bizSel, selectBiz } from './city.js';
 
 /* ---- empresas ---- */
 export function buildBiz(){
@@ -24,8 +26,16 @@ export function updateBiz(){
   setT($('#bizLocked'), `Las empresas se desbloquean en el nivel ${lvReq('biz')}. Estás en el ${S.level}: sigue minando y vendiendo para ganar experiencia.`);
   setT($('#bizSum'), `${bizCount()} de ${BIZ.length} · ingresan ${money(bizTotal())}/s`);
   if (!on) return;
+  const sel = bizSel();
+  const tk = BIZ.map(b => b.id + bizLvl(b.id) + (S.level >= b.lv ? 'a' : 'l') + (S.money >= bizCost(b) ? 'c' : '')).join() + sel;
+  if (tk !== K.bizTabs){
+    K.bizTabs = tk;
+    $('#bizTabs').innerHTML = BIZ.map(b => { const lv = bizLvl(b.id), avail = S.level >= b.lv, can = avail && S.money >= bizCost(b);
+      return `<button type="button" role="tab" data-biz="${b.id}" aria-selected="${b.id === sel}" class="${lv ? 'open' : avail ? 'sale' : 'locked'}${can ? ' can' : ''}"><b>${b.name}</b><small>${lv ? `nv ${lv}` : avail ? 'se vende' : `nivel ${b.lv}`}</small></button>`; }).join('');
+  }
   BIZ.forEach(b => {
     const card = $(`[data-b="${b.id}"]`); if (!card) return;
+    card.hidden = b.id !== sel; if (card.hidden) return;
     const st = S.biz[b.id] || {lv:0}, avail = S.level >= b.lv, q = r => card.querySelector(`[data-r="${r}"]`);
     card.classList.toggle('off', !avail);
     const art = q('art'), ak = Math.min(3, Math.floor((st.lv || 1)/8)) + '|' + (st.lv ? 1 : 0);
@@ -66,3 +76,5 @@ function drawBizArt(cv, id, lv, ghost){
   building(g, id, w/2, h - 15, Math.min(1.7, (h - 26)/est), lv, 1, false);
   g.globalAlpha = 1;
 }
+
+$('#bizTabs').addEventListener('click', e => { const b = e.target.closest('[data-biz]'); if (b) selectBiz(b.dataset.biz); });
