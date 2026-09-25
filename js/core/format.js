@@ -24,6 +24,8 @@ export const fromUnit = (m,v) => m === 'cu' ? v/1000 : v;
 export const plab = (m,p) => m === 'ag' ? nf3.format(p) : nf2.format(toUnit(m,p));
 export const pfmt = (m,p) => plab(m,p) + ' ' + unitOf(m);
 export const fmtHMS = s => { s = Math.max(0, Math.floor(s)); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60; return (h ? h + ':' + String(m).padStart(2,'0') : m) + ':' + String(x).padStart(2,'0'); };
+/* Minutos legibles: «45 s», «3,3 min», «1 h 12 min». */
+export const fmtMin = m => !isFinite(m) ? '—' : m < 1 ? `${nf0.format(m*60)} s` : m < 60 ? `${nf1.format(m)} min` : `${Math.floor(m/60)} h ${Math.round(m % 60)} min`;
 export const fmtT = s => { s = Math.max(0, Math.ceil(s)); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; };
 export const clock = t => new Date(t).toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
 export const clamp = (v,a,b) => Math.max(a, Math.min(b, v));

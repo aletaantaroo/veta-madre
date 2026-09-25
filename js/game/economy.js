@@ -3,7 +3,7 @@ import { clamp, gauss, money, nf0, nf2, nf3 } from '../core/format.js';
 import { BIZ, CREW, DAY_LEN, METALS, MK, RES, syn } from '../data/content.js';
 import { sell } from './market.js';
 import { earn, log, silent, xpMoney } from './progress.js';
-import { S, bizInc, bizMult, bizTotal, cap, crewMult, fac, gps, has, jewelPrice, jewelRate, metalConv, mk, ownFrac, physPrice, prodMult, sk, unl } from './state.js';
+import { S, bizInc, bizMult, bizTotal, buff, cap, crewMult, fac, gps, gpsEq, has, jewelPrice, jewelRate, metalConv, mk, ownFrac, physPrice, prodMult, sk, unl } from './state.js';
 
 /* ================= operaciones: recursos, gastos, finanzas ================= */
 
@@ -139,7 +139,9 @@ function econStep(dt){
     S.fin.hist.push(Object.values(S.fin.last).reduce((a,b)=>a+b,0)); if (S.fin.hist.length > 30) S.fin.hist.shift();
   }
 }
-export function simulate(el){ while (el > 1e-9){ const d = Math.min(5, el); econStep(d); el -= d; } }
+export function simulate(el){ while (el > 1e-9){ const d = Math.min(5, el); econStep(d); el -= d; } trackPeak(); }
+/* La caja fuerte se mide en minutos de la mayor producción que has tenido (sin contar el Turno doble). */
+function trackPeak(){ const g = gpsEq()/(buff('turno') ? 2 : 1); if (g > (S.peakGps || 0)) S.peakGps = g; }
 export function resTick(){
   const px = S.px; let sh;
   sh = Math.abs(px.fs) > .0005 ? px.fs*.3 : (px.fs = 0); px.fs -= sh;

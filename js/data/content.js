@@ -280,13 +280,13 @@ ACH.push(
 export const MILESTONES = [['1k','1.000 € ingresados',()=>S.earned>=1e3],['1m','1 M€ ingresados',()=>S.earned>=1e6],['1b','1.000 M€ ingresados',()=>S.earned>=1e9],['lv10','Nivel 10',()=>S.level>=10],['lv20','Nivel 20',()=>S.level>=20]];
 
 export const PERKS = [
-  {id:'p_auto',    cost:3, name:'Venta automática de la mina', desc:'Tu mina vende sola cuando el precio supera su media o cuando un almacén pasa del 90 %. Se configura en la mina.'},
-  {id:'p_crew',    cost:2, name:'Capataz veterano', desc:'Cada compañía nueva empieza con 10 buscadores y 5 mineros.'},
-  {id:'p_bank',    cost:2, name:'Contactos en el bróker', desc:'Cada compañía nueva empieza con la Cuenta en un bróker y el Analista de mercado.'},
-  {id:'p_vault',   cost:3, name:'Almacén heredado', desc:'La caja fuerte empieza en el nivel 3.'},
-  {id:'p_clients', cost:2, name:'Cartera de clientes', desc:'Los contratos pagan un 5 % más y la reputación empieza en 2 estrellas.'},
-  {id:'p_plants',  cost:4, name:'Ingeniería propia', desc:'Paneles, aerogeneradores y plantas de recursos cuestan la mitad.'},
-  {id:'p_level',   cost:5, name:'Experiencia previa', desc:'Cada compañía nueva empieza en el nivel 5, con sus puntos de habilidad.'},
+  {id:'p_auto',    cost:10, name:'Venta automática de la mina', desc:'Tu mina vende sola cuando el precio supera su media o cuando un almacén pasa del 90 %. Se configura en la mina.'},
+  {id:'p_crew',    cost:6, name:'Capataz veterano', desc:'Cada compañía nueva empieza con 10 buscadores y 5 mineros.'},
+  {id:'p_bank',    cost:6, name:'Contactos en el bróker', desc:'Cada compañía nueva empieza con la Cuenta en un bróker y el Analista de mercado.'},
+  {id:'p_vault',   cost:8, name:'Almacén heredado', desc:'La caja fuerte empieza en el nivel 3.'},
+  {id:'p_clients', cost:8, name:'Cartera de clientes', desc:'Los contratos pagan un 5 % más y la reputación empieza en 2 estrellas.'},
+  {id:'p_plants',  cost:12, name:'Ingeniería propia', desc:'Paneles, aerogeneradores y plantas de recursos cuestan la mitad.'},
+  {id:'p_level',   cost:15, name:'Experiencia previa', desc:'Cada compañía nueva empieza en el nivel 5, con sus puntos de habilidad.'},
 ];
 export const OBJ = [
   {txt:'Pica la roca 15 veces', r:20, test:()=>S.clicks>=15},
@@ -320,7 +320,7 @@ export const TUTS = {
   power:     {t:'Nuevo: power-ups', sec:'mina', s:['De vez en cuando brilla una <b>burbuja</b> en la mina. Tócala antes de que se vaya.','Cada una da una ventaja durante un rato: golpes más fuertes, producción doble, mejores precios o más suerte.']},
   stocks:    {t:'Nuevo: bolsa', sec:'bolsa', s:['Compra acciones de 8 empresas; algunas pagan <b>dividendos</b> cada minuto.','Las mineras se mueven con su metal; las demás van a su aire.']},
   ipo:       {t:'Nuevo: salir a bolsa', sec:'empresas', s:['Con una empresa en nivel 5 puedes venderla en parte y cobrar mucho de golpe.','Después solo cobras de sus beneficios el porcentaje que conserves.']},
-  prestige:  {t:'Vender la compañía', sec:'logros', s:['Ya puedes empezar de cero a cambio de <b>lingotes de legado</b>.','Cada lingote da +5 % o se gasta en ventajas permanentes, como la venta automática de la mina.']},
+  prestige:  {t:'Vender la compañía', sec:'logros', s:['Ya puedes empezar de cero a cambio de <b>lingotes de legado</b>.','Cada lingote da +2 % a todo o se gasta en ventajas permanentes, como la venta automática de la mina.']},
   minigames: {t:'Nuevo: minijuegos', sec:'minijuegos', s:['Mientras picas en la mina, de vez en cuando se suelta una <b>vagoneta</b> o se prepara una <b>voladura</b>: acepta la invitación y juega. Pagan según lo que produce tu mina.','En la sección Minijuegos tienes además la apuesta <b>Sube o baja</b> y, más adelante, el trading.']},
   broker:    {t:'Nuevo: trading', sec:'minijuegos', mg:'trade', s:['<b>Largo</b> gana si el precio sube; <b>corto</b>, si baja.','El apalancamiento multiplica ganancias y pérdidas.','Pon un <b>stop loss</b> para limitar lo que puedes perder.']},
   agente:    {t:'Nuevo: órdenes', sec:'mercado', desk:'ord', s:['Deja ventas programadas para cuando el precio llegue a donde quieras.','Activa la venta automática para que tu almacén nunca se quede lleno.']},

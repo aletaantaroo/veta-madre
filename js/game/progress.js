@@ -3,7 +3,7 @@ import { fmtHMS, money } from '../core/format.js';
 import { ACH, MILESTONES, OBJ, PERKS, SKILLS, SYNERGIES, UNLOCKS, runT, syn } from '../data/content.js';
 import { openedMk, rec } from './economy.js';
 import { warmMarkets } from './market.js';
-import { S, bizTotal, clickEq, fresh, gps, has, legAvail, legacyGain, lvReq, mk, physPrice, save, setS, sk, xpNeed } from './state.js';
+import { LEG_BONUS, S, bizTotal, clickEq, fresh, gps, has, legAvail, legacyGain, lvReq, mk, physPrice, save, setS, sk, xpNeed } from './state.js';
 
 /* ================= avisos, xp, ingresos ================= */
 export let silent = false;
@@ -101,6 +101,6 @@ export function prestige(){
   if (S.perks.p_clients) S.rep = 2;
   if (S.perks.p_level) while (S.level < 5) addXp(xpNeed(S.level) - S.xp + 0.01, true);
   warmMarkets(); emit('sceneReset'); resetKeys(); save();
-  toast(`Vendes la compañía. Tienes ${legAvail()} lingotes sin gastar (+${legAvail()*5} % a todo). Míralos en la tienda de legado.`, 'up', 'imp');
+  toast(`Vendes la compañía. Tienes ${legAvail()} lingotes sin gastar (+${legAvail()*LEG_BONUS*100} % a todo). Míralos en la tienda de legado.`, 'up', 'imp');
   showSection('mina'); updateUI();
 }

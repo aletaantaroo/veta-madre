@@ -1,11 +1,11 @@
 import { K, on, selectDesk, updateUI } from '../core/bus.js';
 import { $, $$, esc, setT } from '../core/dom.js';
-import { clamp, clock, fmtT, money, nf0, nf1, pfmt, plab, smoney, toUnit, unitOf, weight } from '../core/format.js';
+import { clamp, clock, fmtMin, fmtT, money, nf0, nf1, pfmt, plab, smoney, toUnit, unitOf, weight } from '../core/format.js';
 import { EVENTS, GEMS, METALS, MK, REGIMES } from '../data/content.js';
 import { gemCount, gemPrice, gemValue, jewelEvery } from '../game/gems.js';
 import { reserved } from '../game/jobs.js';
 import { buyCap, createOrder, moves, openPos, sell } from '../game/market.js';
-import { S, ask, bid, cap, capCost, fee, frenteDepth, has, impactOf, mk, physPrice, posPnl, refineBonus, sk, spread, unl } from '../game/state.js';
+import { S, ask, bid, cap, capCost, fee, frenteDepth, has, impactOf, mk, physPrice, posPnl, refineBonus, sk, spread, unl, vaultMin } from '../game/state.js';
 import { icon } from './icons.js';
 import { updateJobsMarket } from './jobs.js';
 import { metalSegHtml } from './layout.js';
@@ -92,8 +92,8 @@ function updateDesk(){
     setT($('#impactTxt'), S.stock[m] > 0 ? `Vender mucho de golpe empuja el precio a la baja. Venderlo todo ahora lo bajaría un ${nf1.format(impAll*100)} %.` : 'Vender mucho de golpe empuja el precio a la baja: repartir las ventas suele salir mejor.');
     $$('.sell').forEach(b => b.classList.toggle('cant', !(S.stock[m] > 0)));
     setT($('#capLvl'), String(S.cap+1));
-    setT($('#capDesc'), MK.filter(x => S.opened[x]).map(x => `${METALS[x].name} ${weight(cap(x))}`).join(' · '));
-    const cc = capCost(S.cap), bcap = $('#btnCap'); setT(bcap, `Ampliar ×3 · ${money(cc)}`); bcap.classList.toggle('cant', S.money < cc);
+    setT($('#capDesc'), (S.peakGps > 0 ? `Guarda ${fmtMin(vaultMin())} de producción · ` : '') + MK.filter(x => S.opened[x]).map(x => `${METALS[x].name} ${weight(cap(x))}`).join(' · '));
+    const cc = capCost(S.cap), bcap = $('#btnCap'); setT(bcap, S.peakGps > 0 ? `Ampliar a ${fmtMin(vaultMin(S.cap + 1))} · ${money(cc)}` : `Ampliar · ${money(cc)}`); bcap.classList.toggle('cant', S.money < cc);
   }
   if (desk === 'con') updateJobsMarket();
   if (desk === 'ord'){

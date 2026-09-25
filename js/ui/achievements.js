@@ -2,7 +2,7 @@ import { K } from '../core/bus.js';
 import { $, setT } from '../core/dom.js';
 import { fmtHMS } from '../core/format.js';
 import { ACH, MILESTONES, PERKS, runT } from '../data/content.js';
-import { S, legAvail, legacyGain, lvReq } from '../game/state.js';
+import { LEG_BONUS, S, legAvail, legacyGain, lvReq } from '../game/state.js';
 
 /* ---- logros y prestigio ---- */
 export function updateAch(){
@@ -29,14 +29,14 @@ export function updateAch(){
   $('#records').innerHTML = MILESTONES.map(([k, label]) => `<li class="${S.records[k] ? 'done' : ''}"><b>${S.records[k] ? fmtHMS(S.records[k]) : '—'}</b><span>${label}</span></li>`).join('');
   const n = Object.keys(S.ach).length;
   setT($('#achMeta'), `${n} de ${ACH.length} · +${n} % a producción, clics y empresas`);
-  setT($('#legacyMeta'), S.legacy ? `${S.legacy} lingotes (${legAvail()} sin gastar) · +${legAvail()*5} % a todo` : 'Aún no has vendido ninguna compañía');
+  setT($('#legacyMeta'), S.legacy ? `${S.legacy} lingotes (${legAvail()} sin gastar) · +${legAvail()*LEG_BONUS*100} % a todo` : 'Aún no has vendido ninguna compañía');
   const gain = legacyGain(), lvOk = S.level >= lvReq('prestige'), ok = lvOk && gain >= 1;
   const key = [gain, lvOk, K.prest, S.legacy].join('|'), box = $('#prest');
   if (box.dataset.k !== key){
     box.dataset.k = key;
-    box.innerHTML = `<div><p class="info">Vende todo (mina, empresas, acciones y habilidades) y funda una compañía nueva. A cambio recibes <b>lingotes de legado</b>: cada uno sin gastar da un +5 % permanente a todo, o puedes gastarlos en la tienda de legado. Empiezas con algo de capital y conservas logros, récords y ventajas.</p>
-      <p class="info" style="margin-top:8px">Lingotes que recibirías ahora: <b>${gain}</b> (dependen de la raíz cuadrada de lo ingresado en esta compañía: 1 por cada millón, 10 por 100 millones…).</p></div>
-      <div class="prest-acts"><span class="big">+${gain}</span>${!lvOk ? `<span class="info">Disponible en el nivel ${lvReq('prestige')}.</span>` : gain < 1 ? '<span class="info">Necesitas haber ingresado al menos 1 M€ en esta compañía.</span>' : ''}
+    box.innerHTML = `<div><p class="info">Vende todo (mina, empresas, acciones y habilidades) y funda una compañía nueva. A cambio recibes <b>lingotes de legado</b>: cada uno sin gastar da un +2 % permanente a todo, o puedes gastarlos en la tienda de legado. Empiezas con algo de capital y conservas logros, récords y ventajas.</p>
+      <p class="info" style="margin-top:8px">Lingotes que recibirías ahora: <b>${gain}</b> (dependen de la raíz cúbica de lo ingresado en esta compañía: 1 por cada 100 millones, 10 por 100.000 millones, 22 por un billón…).</p></div>
+      <div class="prest-acts"><span class="big">+${gain}</span>${!lvOk ? `<span class="info">Disponible en el nivel ${lvReq('prestige')}.</span>` : gain < 1 ? '<span class="info">Necesitas haber ingresado al menos 100 M€ en esta compañía.</span>' : ''}
       ${ok && !K.prest ? '<button type="button" class="btn primary" data-act="prest1" id="btnPrest">Vender la compañía</button>' : ''}
       ${ok && K.prest ? '<span class="info">Se reinicia todo salvo logros y lingotes.</span><div class="confirm"><button type="button" class="btn danger" data-act="prest2" id="btnPrestYes">Sí, vender y empezar</button><button type="button" class="btn ghost" data-act="prest0" id="btnPrestNo">Cancelar</button></div>' : ''}</div>`;
   }

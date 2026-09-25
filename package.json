@@ -1,6 +1,6 @@
 {
   "name": "veta-madre",
-  "version": "13.1.0",
+  "version": "13.2.0",
   "private": true,
   "description": "Tycoon minero en el navegador: pica oro, plata y cobre, especula en el mercado, monta empresas y cotiza en bolsa.",
   "type": "module",

@@ -1,6 +1,6 @@
 import { K, emit, on, sfx, updateUI } from '../core/bus.js';
 import { $, $$, esc, setT } from '../core/dom.js';
-import { fmtT, money, nf0, pfmt, weight } from '../core/format.js';
+import { fmtMin, fmtT, money, nf0, pfmt, weight } from '../core/format.js';
 import { CREW, GEMS, METALS, MK, OBJ, POWERUPS, UP } from '../data/content.js';
 import { estRates } from '../game/economy.js';
 import { gemCount, gemValue, gemsOpen } from '../game/gems.js';
@@ -8,7 +8,7 @@ import { HEALTH_TXT, efficiency, health, prodValue } from '../game/health.js';
 import { reserved } from '../game/jobs.js';
 import { dig, fullFlash } from '../game/mining.js';
 import { buyCrew, buyUp, qty, setQty } from '../game/shop.js';
-import { S, buff, cap, capCost, clickPow, costN, crewMult, gps, gpsOf, has, lvReq, maxN, metalConv, mk, opF, physPrice, prodMult, unl } from '../game/state.js';
+import { S, buff, cap, capCost, clickPow, costN, crewMult, gps, gpsOf, has, lvReq, maxN, metalConv, mk, opF, physPrice, prodMult, unl, vaultMin } from '../game/state.js';
 import { drawCrewIcon } from '../render/sprites.js';
 import { icon, kindIcon } from './icons.js';
 import { updateJobsMine } from './jobs.js';
@@ -105,7 +105,7 @@ export function updateMine(){
   // caja fuerte
   const cc = capCost(S.cap), canCap = S.money >= cc;
   setT($('#vaultLv'), 'Caja fuerte');
-  setT($('#vaultInfo'), `nv ${S.cap + 1} · ${M.low} ${weight(cap(m))} → ${weight(cap(m)*3)}`); $('#vaultRow').title = MK.filter(x => S.opened[x]).map(x => `${METALS[x].name}: caben ${weight(cap(x))}, ampliada ${weight(cap(x)*3)}`).join(' · ');
+  const vm = S.peakGps > 0; setT($('#vaultInfo'), vm ? `nv ${S.cap + 1} · ${fmtMin(vaultMin())} → ${fmtMin(vaultMin(S.cap + 1))}` : `nv ${S.cap + 1} · ${M.low} ${weight(cap(m))}`); $('#vaultRow').title = `Guarda ${vm ? fmtMin(vaultMin()) + ' de producción' : 'lo que picas'} · ` + MK.filter(x => S.opened[x]).map(x => `${METALS[x].name}: ${weight(cap(x))}`).join(' · ');
   const bv = $('#btnVault'); setT(bv, `Ampliar · ${money(cc)}`); bv.classList.toggle('cant', !canCap);
   $('#vaultRow').classList.toggle('urgent', full > 0);
   const nOpen = MK.filter(x => S.opened[x]).length;
