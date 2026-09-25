@@ -43,7 +43,7 @@ p.locked::before{content:"";position:absolute;left:14px;top:50%;width:30px;heigh
 /* ---------- mercado ---------- */
 .seg.metal button{position:relative;padding-left:30px}
 .seg.metal button::before{content:"";position:absolute;left:9px;top:50%;margin-top:-8px;width:15px;height:15px;border-radius:50%;border:2px solid var(--ink);background:var(--mc,var(--au))}
-.seg.metal button[data-m="ag"]{--mc:var(--ag)} .seg.metal button[data-m="cu"]{--mc:var(--cu)}
+.seg.metal button[data-m="ag"]{--mc:var(--ag)} .seg.metal button[data-m="cu"]{--mc:var(--cu)} .seg.metal button[data-m="pt"]{--mc:var(--pt)}
 .mk-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
 .mk-chart{display:flex;flex-direction:column;gap:10px;min-width:0}
 .mk-desk{min-width:0}
@@ -106,6 +106,20 @@ p.locked::before{content:"";position:absolute;left:14px;top:50%;width:30px;heigh
 .desk-tabs button{font-size:14.5px;padding:7px 11px}
 .desk-panel{display:flex;flex-direction:column;gap:10px}
 .sell-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sell-row.one{grid-template-columns:minmax(0,1fr)}
+.btn.gem-all{flex-direction:column;gap:2px;min-height:52px;white-space:normal}
+.gem-list{display:flex;flex-direction:column;gap:6px}
+.gem-it{--gc:#a06bff;display:grid;grid-template-columns:34px minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:6px 8px;border:2px solid var(--ink);border-radius:13px;background:#fffaf0}
+.gem-it .btn{margin:0 0 4px}
+.gem-ic{width:34px;height:34px;padding:3px;border-radius:10px;border:2px solid var(--ink);background:color-mix(in srgb,var(--gc) 25%,#fff)}
+.gem-ic svg{width:100%;height:100%;--ic1:var(--gc)}
+.gem-nm{display:flex;flex-direction:column;min-width:0}
+.gem-nm b{font:400 16px/1.1 var(--display)}
+.gem-nm small{font:800 12px var(--body);color:var(--ink-3)}
+.gem-nm i{font-style:normal}
+.gem-n{font:400 17px var(--display);font-variant-numeric:tabular-nums}
+.gem-it.unseen{background:var(--paper-2);border-style:dashed}
+.gem-it.unseen .gem-ic{filter:grayscale(1) opacity(.5)}
 .btn.sell{flex-direction:column;gap:2px;min-height:58px;white-space:normal}
 .s-sub{font:800 11.5px var(--body);opacity:.85}
 .vault{display:flex;align-items:center;gap:12px;padding:10px 12px;border:2px solid var(--ink);border-radius:16px;background:var(--paper-2);flex-wrap:wrap}

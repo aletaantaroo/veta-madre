@@ -20,6 +20,7 @@ const I = {
   tnt: `<rect x="5.6" y="8" width="5" height="12.4" rx="1.4" fill="#ff5b4f" ${O}/><rect x="11.2" y="8" width="5" height="12.4" rx="1.4" fill="#ff5b4f" ${O}/><path d="M5.2 13.2h11.4" stroke="#2a1a0e" stroke-width="1.6"/><path d="M13.6 8c0-3 2-4.4 4.4-4" fill="none" stroke="#2a1a0e" stroke-width="1.6" stroke-linecap="round"/><path d="M18 2.2l.8 1.8 1.8.8-1.8.8-.8 1.8-.8-1.8-1.8-.8 1.8-.8z" fill="#ffc62e"/>`,
   helmet: `<path d="M3.4 16.2a8.6 8.6 0 0 1 17.2 0z" fill="#ffc62e" ${O}/><rect x="2" y="15.6" width="20" height="3.4" rx="1.6" fill="#ffc62e" ${O}/><circle cx="12" cy="10.6" r="2.4" fill="#fff6c8" ${O}/>`,
   wrench: `<path d="M14.6 3.4a5 5 0 0 0-4.2 6.8L3.6 17a2.2 2.2 0 0 0 3.2 3.2l6.8-6.8a5 5 0 0 0 6.8-4.2l-3 1.2-2.4-2.4z" fill="#dfe7ef" ${O}/>`,
+  gem: `<path d="M7 4.2h10l4 5L12 20.2 3 9.2z" fill="var(--ic1,#a06bff)" ${O}/><path d="M3 9.2h18M8.6 9.2L12 20.2l3.4-11M7 4.2l1.6 5M17 4.2l-1.6 5M9.6 4.2L12 9.2l2.4-5" fill="none" stroke="#2a1a0e" stroke-width="1.3" stroke-linejoin="round"/><path d="M8.4 6.2l-.6 2" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>`,
   museum: `<path d="M10 3.5h4v2.2c3.2 1.6 4.8 4.8 4 8.4-.7 3.2-3.2 5.6-6 5.6s-5.3-2.4-6-5.6c-.8-3.6.8-6.8 4-8.4z" fill="#fff" ${O}/><path d="M8.6 8.4q-3 .6-2.4 4M15.4 8.4q3 .6 2.4 4" fill="none" ${O}/><path d="M7 13.4h10" stroke="#b8923a" stroke-width="1.8"/><path d="M5 21.2h14" ${O}/>`,
   close: `<path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/>`,
   dice: `<rect x="3" y="3" width="18" height="18" rx="4.4" fill="#fff" ${O}/><circle cx="8" cy="8" r="1.8" fill="#2a1a0e"/><circle cx="16" cy="8" r="1.8" fill="#2a1a0e"/><circle cx="12" cy="12" r="1.8" fill="#ff5fa8"/><circle cx="8" cy="16" r="1.8" fill="#2a1a0e"/><circle cx="16" cy="16" r="1.8" fill="#2a1a0e"/>`,
@@ -41,4 +42,13 @@ export function icon(name){ return `<svg viewBox="0 0 24 24" aria-hidden="true">
 export function kindIcon(kind){ return icon(KIND[kind] || 'star'); }
 export function paintIcons(root = document){
   root.querySelectorAll('[data-icon]').forEach(el => { if (!el.firstElementChild) el.innerHTML = icon(el.dataset.icon); });
+}
+
+/* El mismo icono como imagen, para pintarlo en el canvas de la mina. */
+const IMG = {};
+export function iconImg(name){
+  if (IMG[name]) return IMG[name];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${(I[name] || I.star).replace(/var\(--[a-z0-9-]+,([^)]+)\)/g, '$1')}</svg>`;
+  const img = new Image(); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  return (IMG[name] = img);
 }

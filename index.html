@@ -56,6 +56,7 @@
   <!-- ================= MINA ================= -->
   <section class="sec sec-mine" id="sec-mina">
     <div class="mine-hud">
+      <div class="buff-bar" id="buffBar" hidden aria-live="polite"></div>
       <div class="obj" id="objBar" hidden>
         <span class="obj-ico" data-icon="flag"></span>
         <span class="obj-body"><span class="obj-n" id="objN">Objetivo 1/12</span><span class="obj-txt" id="objTxt">—</span></span>
@@ -77,6 +78,11 @@
             <span class="vr-ico" data-icon="safe"></span>
             <span class="vr-txt"><b id="vaultLv">Caja fuerte</b><small id="vaultInfo">—</small></span>
             <button type="button" class="btn btn-gold sm" data-act="buyCap" id="btnVault">Ampliar</button>
+          </div>
+          <div class="gem-row" id="gemRow" hidden>
+            <span class="vr-ico" data-icon="gem"></span>
+            <span class="vr-txt"><b>Gemas <span class="gem-dots" id="gemDots"></span></b><small id="gemInfo">—</small></span>
+            <button type="button" class="btn btn-purple sm" data-act="sellGems" id="btnGems">Vender</button>
           </div>
           <div class="mine-jobs" id="mineJobs" hidden><div class="mj-head"><b>Encargos</b><button type="button" class="linkish" data-go="mercado" data-desk-go="con">ver tablón</button></div><div id="mineJobList"></div></div>
         </div>
@@ -102,6 +108,13 @@
           <button type="button" class="linkish fm-go" data-go="finanzas">Ver las cuentas completas</button>
         </div>
       </div>
+    </div>
+
+    <div class="mg-invite" id="mgInvite" hidden role="dialog" aria-label="Minijuego sorpresa">
+      <span class="mi-ico" id="miIco"></span>
+      <span class="mi-txt"><b id="miTitle">—</b><small id="miSub">—</small><span class="mi-bar"><i id="miBar"></i></span></span>
+      <button type="button" class="btn btn-gold" data-act="mgAccept">¡Jugar!</button>
+      <button type="button" class="mi-x" data-act="mgDecline" aria-label="Ahora no">×</button>
     </div>
 
     <div class="dig-dock" id="digDock">
@@ -155,7 +168,7 @@
       <header class="win-head"><span class="win-ico" data-icon="dice"></span><h2>Minijuegos</h2><span class="win-meta" id="mgMeta">—</span><button type="button" class="win-x" data-go="mina" aria-label="Cerrar">×</button></header>
       <div class="win-body">
         <div class="mg-menu" id="mgMenu">
-          <p class="info mg-intro">Un respiro entre turno y turno. La <b>vagoneta</b> y la <b>voladura</b> gastan una ficha (tienes 3 al día y se recargan a medianoche) y pagan según lo que produce tu mina. La <b>apuesta</b> y el <b>trading</b> se juegan con tu caja.</p>
+          <p class="info mg-intro">Un respiro entre turno y turno. La <b>vagoneta</b> y la <b>voladura</b> saltan solas mientras picas en la mina: cuando aparezca la invitación, acéptala y juega. Pagan según lo que produce tu mina. La <b>apuesta</b> y el <b>trading</b> se juegan aquí con tu caja.</p>
           <div class="mg-cards" id="mgCards"></div>
         </div>
 
@@ -306,6 +319,7 @@
               <button type="button" role="tab" data-desk="sell" id="dtSell" aria-selected="true">Vender</button>
               <button type="button" role="tab" data-desk="con" id="dtCon" aria-selected="false">Encargos<span class="badge" id="bCon" hidden>0</span></button>
               <button type="button" role="tab" data-desk="ord" id="dtOrd" aria-selected="false">Órdenes<span class="badge" id="bOrd" hidden>0</span></button>
+              <button type="button" role="tab" data-desk="gem" id="dtGem" aria-selected="false" hidden>Gemas<span class="badge" id="bGem" hidden>0</span></button>
               <button type="button" role="tab" data-desk="log" id="dtLog" aria-selected="false">Historial</button>
             </div>
 
@@ -323,6 +337,13 @@
                 <div><span class="v-name">Caja fuerte · nivel <span id="capLvl">1</span></span><span class="v-desc" id="capDesc">—</span></div>
                 <button class="btn btn-green" type="button" id="btnCap">Ampliar</button>
               </div>
+            </div>
+
+            <div class="desk-panel" id="pGem" role="tabpanel" hidden>
+              <p class="info" id="gemIntro">Las gemas salen al picar y, de vez en cuando, con tu equipo. Cuanto más hondo está el frente, más valiosas.</p>
+              <div class="gem-list" id="gemList"></div>
+              <div class="sell-row one"><button class="btn btn-purple gem-all" type="button" data-act="sellGems" id="gemSellAll"><span>Vender todas</span><span class="s-sub" id="gemAllEst">—</span></button></div>
+              <p class="fine" id="gemJewel"></p>
             </div>
 
             <div class="desk-panel" id="pCon" role="tabpanel" hidden>

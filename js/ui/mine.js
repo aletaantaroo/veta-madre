@@ -1,17 +1,19 @@
 import { K, emit, on, sfx, updateUI } from '../core/bus.js';
 import { $, $$, esc, setT } from '../core/dom.js';
 import { fmtT, money, nf0, pfmt, weight } from '../core/format.js';
-import { CREW, METALS, MK, OBJ, UP } from '../data/content.js';
+import { CREW, GEMS, METALS, MK, OBJ, POWERUPS, UP } from '../data/content.js';
 import { estRates } from '../game/economy.js';
+import { gemCount, gemValue, gemsOpen } from '../game/gems.js';
 import { HEALTH_TXT, efficiency, health, prodValue } from '../game/health.js';
 import { reserved } from '../game/jobs.js';
 import { dig, fullFlash } from '../game/mining.js';
 import { buyCrew, buyUp, qty, setQty } from '../game/shop.js';
-import { S, cap, capCost, clickPow, costN, crewMult, gps, gpsOf, has, lvReq, maxN, metalConv, mk, opF, physPrice, prodMult, unl } from '../game/state.js';
+import { S, buff, cap, capCost, clickPow, costN, crewMult, gps, gpsOf, has, lvReq, maxN, metalConv, mk, opF, physPrice, prodMult, unl } from '../game/state.js';
 import { drawCrewIcon } from '../render/sprites.js';
-import { kindIcon } from './icons.js';
+import { icon, kindIcon } from './icons.js';
 import { updateJobsMine } from './jobs.js';
 import { secOpen } from './layout.js';
+import { updateInvite } from './minigames.js';
 
 /* ---------- panel de producción: cuánto sacas, de qué, dónde picas y si algo va mal ---------- */
 let prodOpen = innerWidth > 860, issuesOpen = false;
@@ -25,7 +27,7 @@ function prodRows(){
     const M = METALS[m], on = m === S.vein;
     return `<button type="button" class="pr-row${on ? ' on' : ''}" data-act="vein" data-m="${m}" id="pr_${m}">
       <span class="pr-dot"></span>
-      <span class="pr-main"><span class="pr-name">${M.name}${on ? '<i class="pr-you" aria-label="picas aquí"></i>' : ''}</span><span class="pr-sub"></span></span>
+      <span class="pr-main"><span class="pr-name">${M.name}</span><span class="pr-sub"></span></span>
       <span class="pr-rate"><b class="pr-v"></b><small>/s</small></span>
       <span class="pr-fill"><span class="pr-bar"><i></i></span><span class="pr-pct"></span></span></button>`;
   });
@@ -46,7 +48,7 @@ function fillProdRows(){
     setT(row.querySelector('.pr-sub'), full ? 'Parada: almacén lleno' : g > 0 ? `≈ ${money(g*physPrice(m))}/s` : 'Sin equipo');
     row.querySelector('.pr-bar i').style.width = (f*100).toFixed(1) + '%';
     setT(row.querySelector('.pr-pct'), full ? 'lleno' : left < 3600 ? `lleno en ${fmtT(left)}` : `${nf0.format(f*100)} %`);
-    row.title = `${m === S.vein ? 'Aquí picas tú' : 'Toca para picar aquí'} · ${weight(st)} de ${weight(c)} · ${pfmt(m, mk(m).price)}`;
+    row.title = `${m === S.vein ? 'La estás viendo' : 'Toca para ir a esta galería'} · ${weight(st)} de ${weight(c)} · ${pfmt(m, mk(m).price)}`;
   });
 }
 /* ---------- finanzas justo debajo de la producción ---------- */
@@ -106,7 +108,9 @@ export function updateMine(){
   setT($('#vaultInfo'), `nv ${S.cap + 1} · ${M.low} ${weight(cap(m))} → ${weight(cap(m)*3)}`); $('#vaultRow').title = MK.filter(x => S.opened[x]).map(x => `${METALS[x].name}: caben ${weight(cap(x))}, ampliada ${weight(cap(x)*3)}`).join(' · ');
   const bv = $('#btnVault'); setT(bv, `Ampliar · ${money(cc)}`); bv.classList.toggle('cant', !canCap);
   $('#vaultRow').classList.toggle('urgent', full > 0);
-  setT($('#clickInfo'), `+${weight(clickPow(m))} ${M.low}`);
+  const nOpen = MK.filter(x => S.opened[x]).length;
+  setT($('#clickInfo'), nOpen > 1 ? `en ${nOpen} minas a la vez` : `+${weight(clickPow(m))} ${M.low}`);
+  updateGemRow(); updateBuffs(); updateInvite();
   const tr = mk(m).price >= (mk(m).hist[Math.max(0, mk(m).hist.length - 61)] || mk(m).price);
   const rsv = Math.min(S.stock[m], reserved(m)), free = S.stock[m] - rsv;
   $('#qsInfo').innerHTML = `${M.name}: <b>${weight(free)}</b> · vale ≈ <b>${money(free*physPrice(m))}</b><br><span class="meta">a ${pfmt(m, mk(m).price)} <span class="${tr ? 't-up' : 't-down'}">${tr ? '▲' : '▼'}</span>${rsv > 0 ? ` · ${weight(rsv)} apartado para encargos` : ''}</span>`;
@@ -245,3 +249,19 @@ $('#shopHandle').addEventListener('click', () => { sfx('ui'); setShopOpen(!shopI
 $('#shopClose').addEventListener('click', () => { sfx('ui'); setShopOpen(false); });
 addEventListener('resize', () => applyShop());
 on('sceneReset', () => { mobOpen = false; applyShop(); });
+
+/* ---------- gemas y power-ups en la mina ---------- */
+function updateGemRow(){
+  const row = $('#gemRow'), on = gemsOpen() || gemCount() > 0; row.hidden = !on; if (!on) return;
+  const n = gemCount(), key = GEMS.map(g => S.gems[g.id] || 0).join();
+  if (key !== K.gemRow){ K.gemRow = key; $('#gemDots').innerHTML = GEMS.filter(g => S.gems[g.id]).map(g => `<i style="--gc:${g.col}" title="${g.name}">${S.gems[g.id]}</i>`).join(''); }
+  setT($('#gemInfo'), n ? `${n} · ≈ ${money(gemValue())}` : 'Salen al picar');
+  $('#btnGems').classList.toggle('cant', !n);
+}
+function updateBuffs(){
+  const bar = $('#buffBar'), act = POWERUPS.filter(p => buff(p.id));
+  bar.hidden = !act.length; if (!act.length) return;
+  const key = act.map(p => p.id).join();
+  if (key !== K.buffs){ K.buffs = key; bar.innerHTML = act.map(p => `<span class="buff" style="--bc:${p.col}" id="bf_${p.id}" title="${p.txt}"><span class="bf-ico">${icon(p.ico)}</span><span class="bf-txt"><b>${p.name}</b><small></small></span><i class="bf-bar"></i></span>`).join(''); }
+  act.forEach(p => { const el = $('#bf_' + p.id); if (!el) return; setT(el.querySelector('small'), `${Math.ceil(S.buffs[p.id])} s`); el.querySelector('.bf-bar').style.width = Math.min(100, S.buffs[p.id]/p.dur*100).toFixed(1) + '%'; });
+}

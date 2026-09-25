@@ -7,8 +7,8 @@ export let S;
 export function setS(v){ S = v; }
 function newMk(m){ const p = METALS[m].p0; return {fund:p, x:0, price:p, hist:[], candles:[], cur:null, shock:0, volBoost:0, regime:{i:Math.floor(Math.random()*4), left:Math.round(rnd(60,200))}}; }
 export function newStock(d){ return {p:d.p, fund:d.p, x:0, hist:[], long:[], k:0, shock:0}; }
-export const fresh = () => ({v:6, money:0, stock:{au:0,ag:0,cu:0}, vein:'au', opened:{au:true}, mined:0, earned:0, allEarned:0, clicks:0, sold:0, best:0, nuggets:0,
-  owned:{}, ups:{}, cap:0, mk:{au:newMk('au'), ag:newMk('ag'), cu:newMk('cu')},
+export const fresh = () => ({v:6, money:0, stock:{au:0,ag:0,cu:0,pt:0}, vein:'au', opened:{au:true}, mined:0, earned:0, allEarned:0, clicks:0, sold:0, best:0, nuggets:0,
+  owned:{}, ups:{}, cap:0, mk:{au:newMk('au'), ag:newMk('ag'), cu:newMk('cu'), pt:newMk('pt')}, gems:{}, gemsFound:{}, gemPx:{}, buffs:{},
   positions:[], pnlReal:0, trades:0, wins:0, lev:5, orders:[], autoSell:false, offers:[], contracts:[], rep:0, conDone:0, conFail:0,
   ev:null, evNext:60, log:[], ind:{sma:true, boll:true, rsi:true}, uid:1,
   level:1, xp:0, sp:0, skills:{}, biz:{}, tecF:1, stocks:{}, hold:{}, divs:0, stPnl:0, rival:{fill:.2, T:200, bought:false, dumps:0},
@@ -20,6 +20,8 @@ export const fresh = () => ({v:6, money:0, stock:{au:0,ag:0,cu:0}, vein:'au', op
 
 export const has = id => !!S.ups[id];
 export const sk = id => !!S.skills[id];
+/* Power-up activo (segundos que le quedan > 0). */
+export const buff = id => !!(S.buffs && S.buffs[id] > 0);
 export const lvReq = key => (UNLOCKS.find(u=>u.key===key) || {lv:1}).lv;
 /* «grand»: partidas de versiones anteriores conservan lo que ya tenían abierto. */
 export const unl = key => S.level >= lvReq(key) || !!(S.grand && S.grand[key]);
@@ -39,11 +41,11 @@ export const moralF = () => S.moral >= 60 ? 1 : MORAL_MIN + (1 - MORAL_MIN)*S.mo
 export const opF = c => (c.e ? fac.e*maintF() : 1)*(c.f ? fac.f : 1)*(c.x ? fac.x : 1)*moralF();
 export const gpsOf = c => (S.owned[c.id]||0) * c.gps * crewMult(c.id) * opF(c);
 const baseGps = () => CREW.reduce((a,c)=>a+gpsOf(c), 0);
-export const prodMult = () => (sk('m3')?1.2:1)*(sk('m5')?1.3:1)*(sk('m7')?1.5:1)*(sk('m10')?1.5:1)*(syn('pico')?1.15:1)*(sk('o7') && !isDay() ? 1.25 : 1)*(sk('e10') ? 1 + .05*bizCount() : 1)*achMult()*legMult()*findMult();
+export const prodMult = () => (sk('m3')?1.2:1)*(sk('m5')?1.3:1)*(sk('m7')?1.5:1)*(sk('m10')?1.5:1)*(syn('pico')?1.15:1)*(sk('o7') && !isDay() ? 1.25 : 1)*(sk('e10') ? 1 + .05*bizCount() : 1)*achMult()*legMult()*findMult()*(buff('turno') ? 2 : 1);
 export const metalConv = m => (80/METALS[m].p0) * METALS[m].yld * (m !== 'au' && sk('m6') ? 1.25 : 1);
 export const gpsEq = () => baseGps()*prodMult();
 export const gps = (m = S.vein) => gpsEq()*metalConv(m);
-export const clickEq = () => (0.025*CLICK_PACE*CLICK_UPS.reduce((a,id)=>a*(has(id)?2:1),1)*(sk('m1')?1.5:1)*achMult()*legMult()) + (has('u_detector') ? gpsEq()*0.05 : 0);
+export const clickEq = () => ((0.025*CLICK_PACE*CLICK_UPS.reduce((a,id)=>a*(has(id)?2:1),1)*(sk('m1')?1.5:1)*achMult()*legMult()) + (has('u_detector') ? gpsEq()*0.05 : 0))*(buff('pico') ? 7 : 1);
 export const clickPow = (m = S.vein) => clickEq()*metalConv(m);
 export const bizLvl = id => (S.biz[id] && S.biz[id].lv) || 0;
 export const bizCount = () => BIZ.filter(b => bizLvl(b.id) > 0).length;
@@ -53,7 +55,7 @@ export const capCost = l => 250*Math.pow(3.2,l)*(sk('m4')?0.7:1);
 export const fee = () => (has('u_tasador')?0.01:0.03)*(sk('t1')?0.6:1);
 export const refineBonus = () => Math.min(0.4, 0.02*bizLvl('refineria')*(sk('e4')?2:1));
 export const saleBonus = () => sk('t10') ? 1.1 : 1;
-export const physPrice = m => mk(m).price*(1-fee())*(1+refineBonus())*saleBonus();
+export const physPrice = m => mk(m).price*(1-fee())*(1+refineBonus())*saleBonus()*(buff('subasta') ? 1.25 : 1);
 export const spread = () => SPREAD*(sk('t2')?0.5:1);
 export const bid = m => mk(m).price*(1 - spread()/2);
 export const ask = m => mk(m).price*(1 + spread()/2);
@@ -121,7 +123,8 @@ export function migrate(d){
   ['res','resLv','auto','px','fin','autoMine','plants'].forEach(k => o[k] = Object.assign({}, f[k], o[k]));
   MK.forEach(m => { if (!o.mk[m]) o.mk[m] = newMk(m); if (!o.mk[m].regime || !REGIMES[o.mk[m].regime.i]) o.mk[m].regime = {i:2,left:120}; });
   o.ind = Object.assign({sma:true, boll:true, rsi:true}, o.ind);
-  o.stock = Object.assign({au:0,ag:0,cu:0}, o.stock);
+  o.stock = Object.assign({au:0,ag:0,cu:0,pt:0}, o.stock);
+  o.gems = Object.assign({}, o.gems); o.gemsFound = Object.assign({}, o.gemsFound); o.gemPx = Object.assign({}, o.gemPx); o.buffs = Object.assign({}, o.buffs);
   o.opened = Object.assign({au:true}, o.opened);
   o.rival = Object.assign({fill:.2, T:200, bought:false, dumps:0}, o.rival);
   if (!o.opened[o.vein]) o.vein = 'au';

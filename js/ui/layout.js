@@ -106,7 +106,7 @@ function renderUI(){
   const lc = $('#legacyChip'); lc.hidden = !S.legacy; setT(lc, `Legado ${S.legacy} · +${legAvail()*5} %`);
   const H = health(), bf = $('#bNavFin'); bf.hidden = !H.lv || !secOpen('finanzas'); bf.classList.toggle('bad', H.lv > 1);
   const newF = findCount() - (S.museoSeen || 0), bmu = $('#bNavMu'); bmu.hidden = newF <= 0 || S.section === 'museo'; setT(bmu, String(newF));
-  const bg = $('#bNavMg'), tk = S.mg ? S.mg.tk : 3; bg.hidden = !tk || !secOpen('minijuegos') || S.section === 'minijuegos'; setT(bg, String(tk));
+  const bg = $('#bNavMg'), tk = S.mg && S.mg.pass ? (S.mg.pass.cart || 0) + (S.mg.pass.blast || 0) : 0; bg.hidden = !tk || !secOpen('minijuegos') || S.section === 'minijuegos'; setT(bg, String(tk));
   const bm = $('#bNavMk'); const pend = S.offers.length; bm.hidden = !pend; setT(bm, String(pend));
   updateNav();
   switch (S.section){

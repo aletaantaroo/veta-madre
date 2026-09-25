@@ -2,8 +2,8 @@ import { K, on, sfx, showSection, toast, updateUI } from '../core/bus.js';
 import { $, $$, dpr, setT } from '../core/dom.js';
 import { money, mulberry32, nf1, nf2, pfmt, rgba } from '../core/format.js';
 import { METALS, MK } from '../data/content.js';
-import { hhmm } from '../game/economy.js';
-import { betCap, betPay, maxTickets, mgPay, mgState, placeBet, tickets, useTicket } from '../game/minigames.js';
+import { betCap, betPay, mgPay, mgState, passes, placeBet, usePass } from '../game/minigames.js';
+import { givePower, powerById, randomPower } from '../game/powerups.js';
 import { S, has, lvReq, mk, unl } from '../game/state.js';
 import { fitCanvas, resetHover } from '../render/charts.js';
 import { cart, miner, nuggetSprite } from '../render/sprites.js';
@@ -16,8 +16,8 @@ import { updateTrading } from './market.js';
 let view = 'menu';
 const GAMES = [
   {id: 'bet',   name: 'Sube o baja',        ico: 'chart', col: 'var(--blue)',   txt: 'Apuesta a si el precio de un metal sube o baja en los próximos segundos.', cost: 'Con tu caja · paga ×1,9'},
-  {id: 'cart',  name: 'Vagoneta desbocada', ico: 'cart',  col: 'var(--orange)', txt: 'La vagoneta se ha soltado: salta rocas y agujeros y coge pepitas.', cost: '1 ficha'},
-  {id: 'blast', name: 'Voladura',           ico: 'tnt',   col: 'var(--red)',    txt: 'Detona cada carga en el momento justo. Tres dificultades: normal, difícil y experto.', cost: '1 ficha'},
+  {id: 'cart',  name: 'Vagoneta desbocada', ico: 'cart',  col: 'var(--orange)', txt: 'La vagoneta se ha soltado: salta rocas y agujeros y coge pepitas.', cost: 'Sorpresa en la mina'},
+  {id: 'blast', name: 'Voladura',           ico: 'tnt',   col: 'var(--red)',    txt: 'Detona cada carga en el momento justo. Tres dificultades: normal, difícil y experto.', cost: 'Sorpresa en la mina'},
   {id: 'trade', name: 'Trading',            ico: 'bull',  col: 'var(--green)',  txt: 'Largo o corto con apalancamiento, sin tocar tu almacén. Para los valientes.', cost: 'Con tu caja · riesgo alto'},
 ];
 const VIEWS = {menu: '#mgMenu', bet: '#mgBet', cart: '#mgCart', blast: '#mgBlast', trade: '#mgTrade'};
@@ -26,17 +26,17 @@ function tradeOpen(){ return has('u_broker'); }
 function cardsHtml(){
   const G = mgState();
   return GAMES.map(g => {
-    const lock = g.id === 'trade' && !tradeOpen(), needTk = g.id === 'cart' || g.id === 'blast', noTk = needTk && G.tk <= 0;
+    const lock = g.id === 'trade' && !tradeOpen(), surprise = g.id === 'cart' || g.id === 'blast', noTk = surprise && passes(g.id) <= 0;
     const best = g.id === 'cart' && G.best.cart ? `Récord: ${G.best.cart} pepitas` : g.id === 'blast' && (G.best.blast || G.best.blast_dificil || G.best.blast_experto) ? `Récord: ${['experto', 'dificil', 'normal'].filter(k => G.best[bestKey(k)]).map(k => `${nf1.format(G.best[bestKey(k)])} (${BLAST_MODES[k].name.toLowerCase()})`)[0]}` : g.id === 'bet' && G.bets.length ? `${G.bets.filter(b => b.pay > b.stake).length} de ${G.bets.length} acertadas` : g.id === 'trade' && S.trades ? `${S.wins}/${S.trades} operaciones ganadas` : '';
     const live = g.id === 'bet' && G.bet ? '<span class="mg-live">En juego</span>' : g.id === 'trade' && S.positions.length ? `<span class="mg-live">${S.positions.length} abierta${S.positions.length > 1 ? 's' : ''}</span>` : '';
     return `<button type="button" class="mg-card${lock ? ' locked' : ''}${noTk ? ' spent' : ''}" data-mg="${g.id}" style="--gc:${g.col}">
       <span class="mg-ico">${icon(g.ico)}</span>
       <span class="mg-txt"><b>${g.name}</b>${live}<span>${g.txt}</span></span>
-      <span class="mg-foot"><span class="mg-cost">${lock ? `Necesitas la Cuenta en un bróker${unl('trading') ? '' : ` (nivel ${lvReq('trading')})`}` : noTk ? 'Sin fichas hasta medianoche' : g.cost}</span>${best ? `<span class="mg-best">${best}</span>` : ''}</span>
+      <span class="mg-foot"><span class="mg-cost">${lock ? `Necesitas la Cuenta en un bróker${unl('trading') ? '' : ` (nivel ${lvReq('trading')})`}` : noTk ? 'Salta sola mientras picas en la mina' : surprise ? `¡${passes(g.id)} partida${passes(g.id) > 1 ? 's' : ''} pendiente${passes(g.id) > 1 ? 's' : ''}!` : g.cost}</span>${best ? `<span class="mg-best">${best}</span>` : ''}</span>
     </button>`;
   }).join('');
 }
-function tkTxt(){ const t = tickets(); return `Fichas: ${'●'.repeat(t)}${'○'.repeat(Math.max(0, maxTickets() - t))} · se recargan a medianoche (${hhmm(0)} del Día ${(S.day || 0) + 1})`; }
+function tkTxt(game){ const n = passes(game); return n ? `Partidas pendientes: ${n}` : 'Salta sola mientras picas en la mina'; }
 function openGame(id){
   if (id === 'trade' && !tradeOpen()){ toast(unl('trading') ? 'Compra la Cuenta en un bróker (Tienda → Mejoras → Mercado) para operar.' : `El trading se abre en el nivel ${lvReq('trading')}.`, '', 'err'); return; }
   if (view !== id) bankUnfinished();
@@ -59,15 +59,15 @@ function openGameQuiet(id){ view = id; Object.entries(VIEWS).forEach(([k, sel]) 
 
 export function updateMinigames(){
   const G = mgState();
-  setT($('#mgMeta'), `Fichas ${G.tk}/${maxTickets()}`);
+  const pend = passes('cart') + passes('blast'); setT($('#mgMeta'), pend ? `${pend} partida${pend > 1 ? 's' : ''} sorpresa pendiente${pend > 1 ? 's' : ''}` : '');
   if (view === 'menu'){
-    const key = [G.tk, G.bet ? 1 : 0, G.bets.length, G.best.cart, G.best.blast, G.best.blast_dificil, G.best.blast_experto, tradeOpen(), S.positions.length, S.trades, S.level].join('|');
+    const key = [passes('cart'), passes('blast'), G.bet ? 1 : 0, G.bets.length, G.best.cart, G.best.blast, G.best.blast_dificil, G.best.blast_experto, tradeOpen(), S.positions.length, S.trades, S.level].join('|');
     if (key !== K.mg){ K.mg = key; $('#mgCards').innerHTML = cardsHtml(); }
   }
   if (view === 'bet') updateBet();
   if (view === 'trade') updateTradeView();
-  if (view === 'cart') setT($('#cartMeta'), tkTxt());
-  if (view === 'blast') setT($('#blastMeta'), tkTxt());
+  if (view === 'cart') setT($('#cartMeta'), tkTxt('cart'));
+  if (view === 'blast') setT($('#blastMeta'), tkTxt('blast'));
 }
 
 /* ---------- línea de precio sencilla para los minijuegos ---------- */
@@ -137,15 +137,15 @@ function sizeCanvas(cv){ const r = cv.getBoundingClientRect(); const w = Math.ro
 function overlay(el, html){ el.innerHTML = html; el.hidden = !html; }
 function cartReady(){
   stopCart(); C = null;
-  const tk = tickets();
-  overlay($('#cartOv'), `<div class="ov-card"><span class="ov-ico">${icon('cart')}</span><b>Vagoneta desbocada</b><span>Salta con un toque, <b>espacio</b> o <b>↑</b>. Cada pepita vale unos segundos de producción de tu mina; si llegas a la salida, premio extra.</span>
-    ${tk > 0 ? `<button type="button" class="btn btn-gold big" id="cartGo">¡Vamos! (1 ficha · te quedan ${tk})</button>` : '<span class="ov-warn">No te quedan fichas. Vuelve después de medianoche.</span>'}</div>`);
+  const tk = passes('cart');
+  overlay($('#cartOv'), `<div class="ov-card"><span class="ov-ico">${icon('cart')}</span><b>Vagoneta desbocada</b><span>Salta con un toque, <b>espacio</b> o <b>↑</b>. Cada pepita vale unos segundos de producción de tu mina; si llegas a la salida, premio extra y un power-up.</span>
+    ${tk > 0 ? `<button type="button" class="btn btn-gold big" id="cartGo">¡Vamos!${tk > 1 ? ` (tienes ${tk} partidas)` : ''}</button>` : '<span class="ov-warn">La vagoneta sale sola mientras picas en la mina: cuando se suelte, acepta la invitación.</span>'}</div>`);
   drawCartIdle();
 }
 function drawCartIdle(){ [cW, cH] = sizeCanvas(CV); if (!cW) return; cg.setTransform(dpr, 0, 0, dpr, 0, 0); drawCartScene(0, true); }
 $('#cartOv').addEventListener('click', e => { if (e.target.id === 'cartGo') startCart(); if (e.target.id === 'cartAgain') cartReady(); });
 function startCart(){
-  if (!useTicket('cart')){ toast('No te quedan fichas.', '', 'err'); return; }
+  if (!usePass('cart')){ toast('La vagoneta sale sola mientras picas en la mina.', '', 'err'); return; }
   [cW, cH] = sizeCanvas(CV); const u = cH/300;
   C = {u, t: -3, dur: 40, dist: 0, v: 300*u, y: 0, vy: 0, air: false, buf: 0, obs: [], nug: [], got: 0, next: 520*u, over: null, overT: 0, parts: [], shake: 0, tilt: 0};
   overlay($('#cartOv'), ''); CV.focus(); sfx('ui');
@@ -205,11 +205,12 @@ function crashCart(msg){ C.over = 'crash'; C.overT = 0; C.msg = msg; C.shake = 8
 function finishCart(){
   const sec = C.got*2 + (C.over === 'win' ? 10 : 0), best = (mgState().best.cart || 0);
   const pay = mgPay('cart', sec, C.got), rec = C.got > best;
-  const tk = tickets();
+  const tk = passes('cart'), gift = C.over === 'win' ? randomPower() : null;
+  if (gift) givePower(gift);
   overlay($('#cartOv'), `<div class="ov-card"><b>${C.over === 'win' ? '¡Llegaste a la salida!' : C.msg}</b>
     <span class="ov-big">${C.got} pepita${C.got === 1 ? '' : 's'}${C.over === 'win' ? ' + premio de salida' : ''}</span>
-    <span class="ov-pay">+${money(pay)}</span>${rec ? '<span class="ov-rec">¡Nuevo récord!</span>' : ''}
-    <div class="ov-btns">${tk > 0 ? `<button type="button" class="btn btn-gold" id="cartAgain">Otra vez (quedan ${tk})</button>` : '<span class="ov-warn">Sin fichas hasta medianoche</span>'}<button type="button" class="btn btn-plain" data-mg-back>Volver</button></div></div>`);
+    <span class="ov-pay">+${money(pay)}</span>${gift ? `<span class="ov-rec">Premio: ${powerById(gift).name}</span>` : ''}${rec ? '<span class="ov-rec">¡Nuevo récord!</span>' : ''}
+    <div class="ov-btns">${tk > 0 ? `<button type="button" class="btn btn-gold" id="cartAgain">Otra partida (tienes ${tk})</button>` : ''}<button type="button" class="btn btn-green" data-go="mina">Volver a la mina</button></div></div>`);
 }
 function drawCartScene(t, idle){
   const w = cW, h = cH; if (!w) return;
@@ -289,10 +290,10 @@ function modeCards(tk){
 }
 function blastReady(){
   stopBlast(); B = null; $('#blastBtn').disabled = true;
-  const tk = tickets();
+  const tk = passes('blast');
   overlay($('#blastOv'), `<div class="ov-card wide"><b>Elige la voladura</b><span class="ov-sub">Detona cuando la aguja esté en la zona <b>verde</b>. Cuantas más cargas, más puedes ganar.</span>
     ${modeCards(tk)}
-    ${tk > 0 ? `<span class="fine">Cada partida gasta 1 ficha · te quedan ${tk}</span>` : '<span class="ov-warn">No te quedan fichas. Vuelve después de medianoche.</span>'}</div>`);
+    ${tk > 0 ? (tk > 1 ? `<span class="fine">Tienes ${tk} voladuras pendientes</span>` : '') : '<span class="ov-warn">La voladura sale sola mientras picas en la mina: cuando esté lista, acepta la invitación.</span>'}</div>`);
   [bW, bH] = sizeCanvas(BV); if (bW){ bg2.setTransform(dpr, 0, 0, dpr, 0, 0); drawBlast(0); }
 }
 $('#blastOv').addEventListener('click', e => {
@@ -302,7 +303,7 @@ $('#blastOv').addEventListener('click', e => {
 });
 function newZone(i){ const M = B.M; return {c0: .2 + Math.random()*.6, c: 0, w: Math.max(M.w[2], M.w[0] - i*M.w[1]), ph: Math.random()*6.28, amp: i >= M.drift[0] ? M.drift[1] : 0}; }
 function startBlast(){
-  if (!useTicket('blast')){ toast('No te quedan fichas.', '', 'err'); return; }
+  if (!usePass('blast')){ toast('La voladura sale sola mientras picas en la mina.', '', 'err'); return; }
   const mode = mgState().bmode || 'normal', M = BLAST_MODES[mode];
   [bW, bH] = sizeCanvas(BV);
   B = {mode, M, i: 0, n: 0, dir: 1, speed: M.sp[0], zone: null, res: [], streak: 0, pts: 0, fails: 0, anim: 0, parts: [], shake: 0, flash: 0, label: '', over: false, t: 0};
@@ -349,12 +350,12 @@ function blastLoop(now){
 function finishBlast(){
   const key = bestKey(B.mode), best = mgState().best[key] || 0, score = Math.round(B.pts*100)/100;
   const pay = B.pts > 0 ? mgPay(key, B.pts*BLAST_PAY, score) : 0, rec = score > best;
-  const tk = tickets(), per = B.res.filter(r => r === 'perfect').length, all = per === B.M.n;
+  const tk = passes('blast'), per = B.res.filter(r => r === 'perfect').length, all = per === B.M.n;
   const title = all ? '¡Todas perfectas!' : B.M.lives && B.fails >= B.M.lives ? '¡Derrumbe! Se acabó la voladura' : B.pts >= B.M.n*.6 ? '¡Buena voladura!' : 'Voladura terminada';
   overlay($('#blastOv'), `<div class="ov-card"><span class="bm-tag" style="--bc:${B.M.col}">${B.M.name}</span><b>${title}</b>
     <span class="ov-big bm-res">${B.res.map(r => r === 'perfect' ? '★' : r === 'good' ? '✔' : '✖').join(' ')}</span><span>${nf2.format(B.pts)} puntos · ${per} perfecta${per === 1 ? '' : 's'} de ${B.M.n}</span>
     ${pay ? `<span class="ov-pay">+${money(pay)}</span>` : '<span class="ov-warn">Sin premio esta vez</span>'}${rec ? '<span class="ov-rec">¡Nuevo récord!</span>' : ''}
-    <div class="ov-btns">${tk > 0 ? `<button type="button" class="btn btn-red" id="blastAgain">Otra vez (quedan ${tk})</button><button type="button" class="btn btn-gold" id="blastModes">Cambiar dificultad</button>` : '<span class="ov-warn">Sin fichas hasta medianoche</span>'}<button type="button" class="btn btn-plain" data-mg-back>Volver</button></div></div>`);
+    <div class="ov-btns">${tk > 0 ? `<button type="button" class="btn btn-red" id="blastAgain">Otra (tienes ${tk})</button><button type="button" class="btn btn-gold" id="blastModes">Cambiar dificultad</button>` : ''}<button type="button" class="btn btn-green" data-go="mina">Volver a la mina</button></div></div>`);
 }
 function drawBlast(t){
   const w = bW, h = bH; if (!w) return;
@@ -403,3 +404,13 @@ function drawBlast(t){
   bg2.restore();
 }
 addEventListener('resize', () => { if (view === 'cart' && !cRaf) drawCartIdle(); if (view === 'blast' && !bRaf){ [bW, bH] = sizeCanvas(BV); if (bW){ bg2.setTransform(dpr, 0, 0, dpr, 0, 0); drawBlast(0); } } });
+
+/* ---------- invitación sorpresa en la mina ---------- */
+const INV = {cart: {t: '¡Vagoneta desbocada!', s: 'Se ha soltado una vagoneta cargada: salta y coge pepitas.', ico: 'cart'},
+             blast: {t: '¡Voladura lista!', s: 'Los barrenos están cargados: detónalos en el momento justo.', ico: 'tnt'}};
+export function updateInvite(){
+  const I = mgState().invite, box = $('#mgInvite');
+  if (!I || S.section !== 'mina'){ if (!box.hidden) box.hidden = true; return; }
+  if (K.mgi !== I.game){ K.mgi = I.game; const D = INV[I.game]; $('#miIco').innerHTML = icon(D.ico); setT($('#miTitle'), D.t); setT($('#miSub'), D.s); box.dataset.g = I.game; box.hidden = false; box.classList.remove('pop'); void box.offsetWidth; box.classList.add('pop'); }
+  $('#miBar').style.width = (Math.max(0, I.left)/I.dur*100).toFixed(1) + '%';
+}

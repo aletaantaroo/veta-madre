@@ -2,6 +2,7 @@ import { K } from '../core/bus.js';
 import { $, setT } from '../core/dom.js';
 import { fmtT, money, nf0, nf1, weight } from '../core/format.js';
 import { BIZ } from '../data/content.js';
+import { jewelEvery } from '../game/gems.js';
 import { S, bizCost, bizCount, bizFull, bizInc, bizLvl, bizMult, bizTotal, jewelPrice, jewelRate, lvReq, mgrCost, ownFrac, refineBonus, sk, unl } from '../game/state.js';
 import { building, cloud, tree } from '../render/sprites.js';
 import { bizSel, selectBiz } from './city.js';
@@ -19,6 +20,7 @@ export function buildBiz(){
       <button type="button" class="btn sm" data-act="bizMgr" data-id="${b.id}" data-r="mgr">—</button>
       <button type="button" class="btn sm" data-act="bizIpo" data-id="${b.id}" data-r="ipo">Salir a bolsa</button>
       <button type="button" class="btn sm ghost" data-act="bizPause" data-id="${b.id}" data-r="pause" hidden>Pausar</button>
+      <button type="button" class="btn sm ghost" data-act="jewelGems" data-r="gems" hidden>Gemas</button>
     </div></article>`).join('');
 }
 export function updateBiz(){
@@ -59,6 +61,7 @@ export function updateBiz(){
     const ipo = q('ipo'); ipo.hidden = !st.lv || st.pub || !unl('ipo');
     if (!ipo.hidden){ const ok = st.lv >= 5; setT(ipo, ok ? `Salir a bolsa · +${money(bizFull(b)*900*.4*(sk('e6')?1.3:1))}` : 'Salir a bolsa (nv 5)'); ipo.classList.toggle('cant', !ok); }
     const pz = q('pause'); pz.hidden = b.id !== 'joyeria' || !st.lv; setT(pz, st.paused ? 'Reanudar' : 'Pausar');
+    const gz = q('gems'); gz.hidden = b.id !== 'joyeria' || !st.lv; setT(gz, S.jewelGems === false ? 'Engastar gemas: no' : `Engastar gemas: sí (1 cada ${jewelEvery()} s)`);
   });
 }
 

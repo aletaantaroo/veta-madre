@@ -1,22 +1,35 @@
-import { K, emit, on, sfx, toast, updateUI } from '../core/bus.js';
+import { K, emit, sfx, toast, updateUI } from '../core/bus.js';
 import { money } from '../core/format.js';
 import { METALS } from '../data/content.js';
 import { estRates, rec } from './economy.js';
+import { lastDigAt } from './mining.js';
 import { earn, log, refIncome, silent } from './progress.js';
 import { S, clickEq, mk, sk, unl } from './state.js';
 
-/* ================= minijuegos: fichas, premios y la apuesta «sube o baja» =================
-   La vagoneta y la voladura gastan una ficha (3 al día, se recargan a medianoche) y pagan en
-   «segundos de producción», así el premio crece con tu mina sin romper la economía.
-   La apuesta se juega con tu caja, con un tope para que siga siendo un juego. */
-export const maxTickets = () => sk('o5') ? 4 : 3;
+/* ================= minijuegos: sorpresas, premios y la apuesta «sube o baja» =================
+   La vagoneta y la voladura ya no se lanzan a mano: mientras picas en la mina, cada 4-7 minutos salta una
+   invitación. Si la aceptas tienes una partida (se guarda si sales sin jugarla). Pagan en «segundos de
+   producción», así el premio crece con tu mina sin romper la economía. La apuesta se juega con tu caja. */
 export const betPay = () => sk('t9') ? 2 : 1.9;
-export function mgState(){ return (S.mg ||= {tk: maxTickets(), best: {}, plays: {}, bets: []}); }
-export const tickets = () => mgState().tk;
-export function useTicket(game){
-  const G = mgState(); if (G.tk <= 0) return false;
-  G.tk--; G.plays[game] = (G.plays[game] || 0) + 1; K.mg = ''; return true;
+export function mgState(){ const G = (S.mg ||= {best: {}, plays: {}, bets: []}); G.pass ||= {}; return G; }
+export const passes = game => mgState().pass[game] || 0;
+export function usePass(game){
+  const G = mgState(); if (!(G.pass[game] > 0)) return false;
+  G.pass[game]--; G.plays[game] = (G.plays[game] || 0) + 1; K.mg = ''; return true;
 }
+let inviteT = 150;   // la primera sorpresa llega antes (unos 2,5 minutos picando)
+/* Una vez por segundo con el juego abierto: solo cuenta el tiempo en la mina mientras estás picando. */
+export function mgInviteTick(){
+  const G = mgState();
+  if (G.invite){ if ((G.invite.left -= 1) <= 0){ G.invite = null; K.mgi = ''; } return; }
+  if (!unl('minigames') || S.section !== 'mina' || performance.now() - lastDigAt > 45000) return;
+  if ((inviteT -= sk('o5') ? 1.5 : 1) > 0) return;
+  inviteT = 240 + Math.random()*180;
+  G.invite = {game: Math.random() < .5 ? 'cart' : 'blast', left: 20, dur: 20}; K.mgi = '';
+  if (!silent){ sfx('sparkle'); emit('mgInvite', G.invite); }
+}
+export function acceptInvite(){ const G = mgState(), I = G.invite; if (!I) return; G.invite = null; G.pass[I.game] = (G.pass[I.game] || 0) + 1; K.mgi = ''; K.mg = ''; emit('mgOpen', I.game); }
+export function declineInvite(){ mgState().invite = null; K.mgi = ''; sfx('ui'); }
 /* Premio de un minijuego: «sec» segundos de lo que produce ahora tu compañía, con un mínimo para el principio. */
 const mgUnit = () => Math.max(estRates().inc, clickEq()*mk('au').price*2, 0.4);   // lo que ingresas de verdad ahora (un almacén lleno no cuenta)
 export function mgPay(game, sec, score){
@@ -27,7 +40,6 @@ export function mgPay(game, sec, score){
   K.mg = ''; updateUI();
   return v;
 }
-on('newDay', () => { const G = mgState(); if (G.tk < maxTickets()){ G.tk = maxTickets(); K.mg = ''; if (unl('minigames')) toast(`Nuevas fichas para los minijuegos: ${maxTickets()}`, 'up'); } });
 
 /* ---- sube o baja ---- */
 export const betCap = () => Math.max(20, refIncome()*300)*(sk('t9') ? 3 : 1);

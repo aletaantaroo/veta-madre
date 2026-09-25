@@ -9,7 +9,7 @@ import { S } from '../game/state.js';
 const fxCv = $('#fx'), fxg = fxCv.getContext('2d');
 let FW = 0, FH = 0, FS = 1, flyers = [], confetti = [], sparks = [], lastPtr = [innerWidth/2, innerHeight/2], dispMoney = null, lastOre = 0, lvHide = 0, fxDirty = false, arrivedAt = {};
 const CONF = ['#ffc62e', '#3fcf6c', '#3ea8ff', '#ff5b4f', '#a06bff', '#ff9636', '#2cd3c6', '#fff5de'];
-const ORE = {au:'#ffc62e', ag:'#d7e2ef', cu:'#ff8a4c'};
+const ORE = {au:'#ffc62e', ag:'#d7e2ef', cu:'#ff8a4c', pt:'#b8c6ea'};
 
 export function fxResize(){ FW = innerWidth; FH = innerHeight; FS = Math.min(dpr, 1.6); fxCv.width = Math.round(FW*FS); fxCv.height = Math.round(FH*FS); }
 addEventListener('resize', fxResize);

@@ -17,7 +17,7 @@
   --up:#1c9146; --down:#d2382d; --up-l:#5fe08a; --down-l:#ff7d72;
   /* monitor de mercado */
   --scr:#15203a; --scr-2:#1d2b4b; --scr-line:rgba(160,190,255,.14); --scr-txt:#9fb3d9;
-  --au:#ffc62e; --ag:#c9d6e8; --cu:#ff8a4c;
+  --au:#ffc62e; --ag:#c9d6e8; --cu:#ff8a4c; --pt:#a9b7de;
   --display:'Lilita One','Arial Rounded MT Bold','Trebuchet MS',system-ui,sans-serif;
   --body:'Nunito',ui-rounded,'Segoe UI',system-ui,-apple-system,sans-serif;
   --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;

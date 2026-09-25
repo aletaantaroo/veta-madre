@@ -10,8 +10,9 @@ export const METALS = {
   au:{name:'Oro',   low:'oro',   p0:80,   sig:.011, fvol:.0008, capBase:5,     yld:1,    lv:1,  open:0,      line:'#e4b84c', ink:'#241a05', vein:['#8a6a1f','#d9ad44'], fl:['#e4b84c','#c9982f'], glow:'255,215,110', txt:'#f5d783'},
   ag:{name:'Plata', low:'plata', p0:1,    sig:.018, fvol:.0011, capBase:400,   yld:1.15, lv:8,  open:20000,  line:'#cdd5d9', ink:'#1a2023', vein:['#5f676b','#d5dbde'], fl:['#e3e8ea','#aab3b8'], glow:'220,230,235', txt:'#eef3f4'},
   cu:{name:'Cobre', low:'cobre', p0:.01,  sig:.009, fvol:.0007, capBase:40000, yld:1.3,  lv:15, open:400000, line:'#dd8c56', ink:'#2a1206', vein:['#6b3519','#d98a55'], fl:['#e39a66','#b8683a'], glow:'240,160,110', txt:'#f3b68c'},
+  pt:{name:'Platino', low:'platino', p0:30, sig:.014, fvol:.0009, capBase:12,   yld:1.45, lv:18, open:2.5e7,  line:'#a9b7de', ink:'#141a2a', vein:['#4f5a78','#c7d2ee'], fl:['#d5def5','#8f9cc0'], glow:'200,210,245', txt:'#dfe6ff'},
 };
-export const MK = ['au','ag','cu'];
+export const MK = ['au','ag','cu','pt'];
 /* Un día del juego dura 6 minutos reales (1 hora = 15 s). De 06:00 a 18:00 es de día. */
 export const DAY_LEN = 360;
 export const CREW = [
@@ -71,13 +72,15 @@ export const NEWS = {
       ['Los especuladores abandonan la plata tras semanas de subidas', -.08],['Jornada tranquila en la plata', 0]],
   cu:[['Boom de la construcción: el cobre se dispara', .06],['Los coches eléctricos necesitan más cable que nunca', .05],['Frenazo industrial: cae la demanda de cobre', -.06],
       ['Los almacenes de cobre se llenan', -.04],['Jornada tranquila en el cobre', 0]],
+  pt:[['Los fabricantes de coches compran platino para sus catalizadores', .07],['La industria del hidrógeno dispara la demanda de platino', .08],['Las minas sudafricanas recuperan su producción de platino', -.07],
+      ['Los coches eléctricos restan demanda al platino', -.05],['Jornada tranquila en el platino', 0]],
 };
 export const EVENTS = [
-  {name:'Dato de inflación', big:.08, eff:{au:1, ag:1, cu:.3}, pos:'La inflación sale más alta de lo esperado', neg:'La inflación se modera más de lo previsto'},
-  {name:'Decisión de tipos del banco central', big:.10, eff:{au:1, ag:1.2, cu:.5}, pos:'El banco central baja los tipos por sorpresa', neg:'El banco central sube los tipos más de lo esperado'},
-  {name:'Informe de empleo', big:.06, eff:{au:1, ag:.7, cu:-1}, pos:'El empleo decepciona y crece la incertidumbre', neg:'El empleo sorprende al alza y la economía gana confianza'},
-  {name:'Índice de actividad industrial', big:.07, eff:{au:-.3, ag:.6, cu:1.4}, pos:'La industria acelera con fuerza', neg:'La actividad industrial se frena'},
-  {name:'Subasta de reservas de oro', big:.07, eff:{au:1, ag:.3, cu:0}, pos:'La subasta de reservas queda desierta: sobran compradores', neg:'La subasta inunda el mercado de oro'},
+  {name:'Dato de inflación', big:.08, eff:{au:1, ag:1, cu:.3, pt:.6}, pos:'La inflación sale más alta de lo esperado', neg:'La inflación se modera más de lo previsto'},
+  {name:'Decisión de tipos del banco central', big:.10, eff:{au:1, ag:1.2, cu:.5, pt:.8}, pos:'El banco central baja los tipos por sorpresa', neg:'El banco central sube los tipos más de lo esperado'},
+  {name:'Informe de empleo', big:.06, eff:{au:1, ag:.7, cu:-1, pt:-.5}, pos:'El empleo decepciona y crece la incertidumbre', neg:'El empleo sorprende al alza y la economía gana confianza'},
+  {name:'Índice de actividad industrial', big:.07, eff:{au:-.3, ag:.6, cu:1.4, pt:1.1}, pos:'La industria acelera con fuerza', neg:'La actividad industrial se frena'},
+  {name:'Subasta de reservas de oro', big:.07, eff:{au:1, ag:.3, cu:0, pt:.2}, pos:'La subasta de reservas queda desierta: sobran compradores', neg:'La subasta inunda el mercado de oro'},
 ];
 export const REGIMES = [
   {name:'Fase alcista', mu:.00035, vol:1, tone:'up'},
@@ -91,11 +94,12 @@ export const CLIENTS = [
   {id:'salvat',  name:'Relojería Salvat',      ico:'clock',   col:'#ff9636', m:['au','ag'], txt:'Siempre con prisa: pide muchos encargos urgentes.', urgent:.35},
   {id:'banco',   name:'Banco del Norte',       ico:'bank',    col:'#3ea8ff', m:['au'],      txt:'Pedidos enormes para sus reservas, con mucho plazo.', big:.35},
   {id:'rios',    name:'Numismática Ríos',      ico:'star',    col:'#a06bff', m:['au','ag'], txt:'Monedas conmemorativas: le encantan los pedidos en cadena.', chain:.3},
-  {id:'galan',   name:'Filigrana Galán',       ico:'helmet',  col:'#ff5b4f', m:['au','ag'], txt:'Artesanos exigentes: pagan un extra por la calidad.', prem:.03},
+  {id:'galan',   name:'Filigrana Galán',       ico:'helmet',  col:'#ff5b4f', m:['au','ag','pt'], txt:'Artesanos exigentes: pagan un extra por la calidad.', prem:.03},
   {id:'brisa',   name:'Paneles Solares Brisa', ico:'sun',     col:'#2cd3c6', m:['ag'],      txt:'Necesita plata para sus células solares.'},
   {id:'neon',    name:'Electrónica Neón',      ico:'bolt',    col:'#3fcf6c', m:['ag','cu'], txt:'Plata y cobre para circuitos. Encadena pedidos si le caes bien.', chain:.2},
   {id:'levante', name:'Cableados Levante',     ico:'factory', col:'#ff8a4c', m:['cu'],      txt:'Cobre por toneladas.', big:.3},
   {id:'iberica', name:'Fundición Ibérica',     ico:'wrench',  col:'#9a7a57', m:['cu','ag'], txt:'Compra lo que le eches, aunque regatea un poco.', prem:-.01},
+  {id:'catalis', name:'Catalizadores Íbero',   ico:'gear',    col:'#8f9cc0', m:['pt'],      txt:'Platino para los tubos de escape de media Europa. Pedidos grandes.', big:.3},
 ];
 /* Tipos de encargo. mult: cantidad respecto a uno normal · prem: prima sobre el spot · t: plazo en segundos reales (15 s = 1 hora del juego) · xp: experiencia por euro · rep: reputación. */
 export const JOB_KINDS = {
@@ -117,6 +121,7 @@ export const UNLOCKS = [
   {lv:2,  key:'habilidades', sec:'habilidades', txt:'Habilidades: gasta tus puntos'},
   {lv:2,  key:'logros',    sec:'logros',   txt:'Logros y estadísticas'},
   {lv:3,  key:'mercado',   sec:'mercado',  txt:'Mercado: gráfico de precios'},
+  {lv:3,  key:'power',     txt:'Power-ups en la mina'},
   {lv:4,  key:'finanzas',  sec:'finanzas', txt:'Finanzas: tus cuentas'},
   {lv:5,  key:'contracts', txt:'Encargos de clientes'},
   {lv:6,  key:'minigames', sec:'minijuegos', txt:'Minijuegos: apuesta, vagoneta y voladura'},
@@ -126,6 +131,7 @@ export const UNLOCKS = [
   {lv:11, key:'taxes',     txt:'Hacienda te encuentra: impuestos cada 5 min'},
   {lv:12, key:'biz',       sec:'empresas', txt:'Empresas'},
   {lv:15, key:'cu',        txt:'Yacimiento de cobre'},
+  {lv:18, key:'pt',        txt:'Yacimiento de platino'},
   {lv:20, key:'stocks',    sec:'bolsa',    txt:'Bolsa de valores'},
   {lv:21, key:'ipo',       txt:'Sacar tus empresas a bolsa'},
   {lv:22, key:'prestige',  txt:'Vender la compañía con bonus'},
@@ -166,7 +172,7 @@ export const SKILLS = [
   {b:'o', id:'o2', t:1, name:'Ahorro energético', desc:'Las máquinas gastan un 20 % menos de energía.', cost:1, req:['o1']},
   {b:'o', id:'o3', t:1, name:'Mantenimiento preventivo', desc:'La maquinaria se desgasta un 40 % menos.', cost:2, req:['o1']},
   {b:'o', id:'o4', t:2, name:'Logística', desc:'Combustible y explosivos: un 25 % menos de consumo.', cost:2, req:['o2']},
-  {b:'o', id:'o5', t:2, name:'Horas extra', desc:'Una ficha más al día para los minijuegos (4 en total).', cost:3, req:['o3']},
+  {b:'o', id:'o5', t:2, name:'Horas extra', desc:'Los minijuegos sorpresa salen un 50 % más a menudo.', cost:3, req:['o3']},
   {b:'o', id:'o6', t:3, name:'Negociador', desc:'Las nóminas cuestan un 20 % menos.', cost:3, req:['o4']},
   {b:'o', id:'o7', t:3, name:'Turno de noche', desc:'De noche (de 18:00 a 06:00) la mina produce un 25 % más.', cost:4, req:['o4','o5']},
   {b:'o', id:'o8', t:4, ex:'o-x', name:'Autonomía energética', desc:'Paneles y aerogeneradores producen el doble.', cost:4, req:['o7']},
@@ -206,7 +212,7 @@ export const STOCKS = [
   {id:'NUB', name:'Nubia Tech',           sector:'Tecnología',       p:120, vol:.008, mu:.00008, beta:{},       div:0,     desc:'Mucho crecimiento, mucha volatilidad, sin dividendo.'},
   {id:'SOL', name:'Energía Solaris',      sector:'Energía',          p:35,  vol:.004, mu:.00005, beta:{cu:.4},  div:.003,  desc:'Renovables: necesita cobre y paga dividendo.'},
   {id:'ATL', name:'Construcciones Atlas', sector:'Construcción',     p:22,  vol:.005, mu:.00003, beta:{cu:.8},  div:.002,  desc:'Sube cuando la economía (y el cobre) van bien.'},
-  {id:'AUR', name:'Aurum Lujo',           sector:'Joyería de lujo',  p:88,  vol:.004, mu:.00004, beta:{au:.5},  div:.0025, desc:'Lujo: algo ligada al oro.'},
+  {id:'AUR', name:'Aurum Lujo',           sector:'Joyería de lujo',  p:88,  vol:.004, mu:.00004, beta:{au:.5, pt:.3}, div:.0025, desc:'Lujo: algo ligada al oro.'},
 ];
 export const ST_POS = ['{n} presenta resultados mejores de lo esperado','{n} firma un contrato enorme','Un analista recomienda comprar {n}','{n} anuncia recompra de acciones'];
 export const ST_NEG = ['{n} decepciona con sus resultados','{n} retrasa un proyecto clave','Dimite por sorpresa el consejero delegado de {n}','El regulador abre una investigación a {n}'];
@@ -239,6 +245,10 @@ export const ACH = [
   {id:'a_rep',    name:'Reputación intachable', desc:'Llega a 5 estrellas de reputación.', test:()=>S.rep>=5},
   {id:'a_ag',     name:'Brillo de luna', desc:'Abre el yacimiento de plata.', test:()=>!!S.opened.ag},
   {id:'a_cu',     name:'Toma de tierra', desc:'Abre el yacimiento de cobre.', test:()=>!!S.opened.cu},
+  {id:'a_pt',     name:'Metal noble', desc:'Abre el yacimiento de platino.', test:()=>!!S.opened.pt},
+  {id:'a_gem',    name:'Algo que brilla', desc:'Encuentra tu primera gema.', test:()=>!!(S.gemsFound && Object.keys(S.gemsFound).length)},
+  {id:'a_gem5',   name:'Cofre del tesoro', desc:'Encuentra los cinco tipos de gema.', test:()=>!!(S.gemsFound && Object.keys(S.gemsFound).length >= 5)},
+  {id:'a_power',  name:'¡Energía!', desc:'Activa un power-up en la mina.', test:()=>!!S.flags.a_power},
   {id:'a_rival',  name:'Un paso por delante', desc:'Vende oro justo antes de que Minas del Cierzo inunde el mercado.', test:()=>!!S.flags.a_rival},
   {id:'a_biz',    name:'Emprendedor', desc:'Abre tu primera empresa.', test:()=>bizCount()>=1},
   {id:'a_biz6',   name:'Holding', desc:'Ten las 6 empresas.', test:()=>bizCount()>=6},
@@ -305,10 +315,13 @@ export const TUTS = {
   taxes:     {t:'Hacienda', sec:'finanzas', s:['Cada 5 minutos pagas un 10 % de tu beneficio.','Si en ese periodo pierdes dinero, no pagas.','El <b>Asesor fiscal</b> (Mejoras) lo baja al 5 %.']},
   biz:       {t:'Nuevo: empresas', sec:'empresas', s:['Invierte lo que gana la mina en negocios que <b>trabajan solos</b>.','Un <b>gerente</b> duplica lo que produce cada empresa.','Tienen gastos fijos: una mala racha también cuesta dinero.']},
   cu:        {t:'Nuevo: cobre', sec:'mina', s:['Ábrelo desde el selector de la mina.','El cobre sigue a la economía: sube cuando la industria va bien, aunque el oro baje.']},
+  pt:        {t:'Nuevo: platino', sec:'mina', s:['Ábrelo desde el panel de Producción de la mina.','El platino es metal precioso e industrial a la vez: sube con la industria y con los coches.']},
+  gems:      {t:'Nuevo: gemas', sec:'mina', s:['Al picar (y de vez en cuando, con tu equipo) salen <b>gemas</b>. Cuanto más hondo llega tu mina, más valiosas.','Véndelas desde el panel de Producción o en el Mercado. Si tienes joyería, las engasta sola y las vende al doble.']},
+  power:     {t:'Nuevo: power-ups', sec:'mina', s:['De vez en cuando brilla una <b>burbuja</b> en la mina. Tócala antes de que se vaya.','Cada una da una ventaja durante un rato: golpes más fuertes, producción doble, mejores precios o más suerte.']},
   stocks:    {t:'Nuevo: bolsa', sec:'bolsa', s:['Compra acciones de 8 empresas; algunas pagan <b>dividendos</b> cada minuto.','Las mineras se mueven con su metal; las demás van a su aire.']},
   ipo:       {t:'Nuevo: salir a bolsa', sec:'empresas', s:['Con una empresa en nivel 5 puedes venderla en parte y cobrar mucho de golpe.','Después solo cobras de sus beneficios el porcentaje que conserves.']},
   prestige:  {t:'Vender la compañía', sec:'logros', s:['Ya puedes empezar de cero a cambio de <b>lingotes de legado</b>.','Cada lingote da +5 % o se gasta en ventajas permanentes, como la venta automática de la mina.']},
-  minigames: {t:'Nuevo: minijuegos', sec:'minijuegos', s:['Tienes <b>3 fichas al día</b> para la vagoneta y la voladura: pagan según lo que produce tu mina.','Las fichas se recargan a medianoche (mira el reloj de arriba).','«Sube o baja» se juega con tu caja: apuesta si el precio sube o baja en unos segundos.']},
+  minigames: {t:'Nuevo: minijuegos', sec:'minijuegos', s:['Mientras picas en la mina, de vez en cuando se suelta una <b>vagoneta</b> o se prepara una <b>voladura</b>: acepta la invitación y juega. Pagan según lo que produce tu mina.','En la sección Minijuegos tienes además la apuesta <b>Sube o baja</b> y, más adelante, el trading.']},
   broker:    {t:'Nuevo: trading', sec:'minijuegos', mg:'trade', s:['<b>Largo</b> gana si el precio sube; <b>corto</b>, si baja.','El apalancamiento multiplica ganancias y pérdidas.','Pon un <b>stop loss</b> para limitar lo que puedes perder.']},
   agente:    {t:'Nuevo: órdenes', sec:'mercado', desk:'ord', s:['Deja ventas programadas para cuando el precio llegue a donde quieras.','Activa la venta automática para que tu almacén nunca se quede lleno.']},
   analista:  {t:'Nuevo: analista', sec:'mercado', s:['La <b>media móvil</b> (línea azul) muestra la tendencia.','El aviso bajo el gráfico te dice si el precio está alto o bajo respecto a su media.']},
@@ -322,11 +335,11 @@ export const RES = {
   x:{name:'Explosivos', unit:'kg', cat:'explosivos', base:100, cost:3000, store:'polvorín', users:'equipos de voladura y tuneladoras'},
 };
 
-export const CATS_IN = [['metal','Venta de metal'],['contratos','Contratos'],['empresas','Empresas'],['dividendos','Dividendos'],['trading','Trading'],['bolsa','Bolsa'],['otros','Otros']];
+export const CATS_IN = [['metal','Venta de metal'],['gemas','Gemas'],['contratos','Contratos'],['empresas','Empresas'],['dividendos','Dividendos'],['trading','Trading'],['bolsa','Bolsa'],['otros','Otros']];
 export const CATS_OUT = [['nominas','Nóminas'],['energia','Energía'],['combustible','Combustible'],['explosivos','Explosivos'],['mantenimiento','Mantenimiento'],['gastosEmp','Gastos de empresas'],['intereses','Intereses'],['impuestos','Impuestos']];
 
 /* ================= el descenso: galerías, hallazgos y secretos ================= */
-export const GAL_DEPTH = {au: 5, ag: 180, cu: 480};
+export const GAL_DEPTH = {au: 5, ag: 180, cu: 480, pt: 1100};
 export const RARITY = {
   c: {name: 'Común', col: '#3fcf6c', dark: '#1f9447', sec: 20, floor: 40, xp: .04},
   r: {name: 'Raro', col: '#3ea8ff', dark: '#1d6fc4', sec: 45, floor: 150, xp: .08},
@@ -381,3 +394,22 @@ export const SECRETS = [
 ];
 ACH.push(...SECRETS.map(s => ({id: s.id, name: s.name, desc: s.desc, secret: true, test: () => !!(S.flags && S.flags[s.id])})));
 TUTS.finds = {t: 'Nuevo: hallazgos', sec: 'mina', s: ['Mientras tu mina baja aparecen <b>cosas escondidas en la roca</b>. Brillan y llevan una señal <b>!</b>.', 'Tócalas para desenterrarlas: dan premios y se guardan en el <b>Museo</b>.', 'Arrastra la mina o usa la rueda del ratón para bajar. El mapa de la derecha te lleva al frente.']};
+
+/* ================= gemas =================
+   Salen al picar y, muy de vez en cuando, con tu equipo. Cada una aparece a partir de una profundidad del frente.
+   p: precio de referencia (se mueve un poco con el mercado) · w: lo común que es. */
+export const GEMS = [
+  {id:'ame', name:'Amatista',  f:1, pl:'amatistas',  col:'#a06bff', hi:'#e3d1ff', d:40,   p:3000,  w:40},
+  {id:'esm', name:'Esmeralda', f:1, pl:'esmeraldas', col:'#22b86a', hi:'#b6f3d0', d:150,  p:4e4,   w:24},
+  {id:'rub', name:'Rubí',      f:0, pl:'rubíes',     col:'#ff3d55', hi:'#ffc4cc', d:500,  p:1.2e6, w:14},
+  {id:'zaf', name:'Zafiro',    f:0, pl:'zafiros',    col:'#3566ff', hi:'#bfd0ff', d:1500, p:1.2e7, w:8},
+  {id:'dia', name:'Diamante',  f:0, pl:'diamantes',  col:'#bff4ff', hi:'#ffffff', d:4000, p:3e8,   w:3},
+];
+/* ================= power-ups =================
+   Burbujas que aparecen en la mina: tócalas y durante un rato tienes una ventaja. */
+export const POWERUPS = [
+  {id:'pico',    name:'Pico dorado',  ico:'pick',   col:'#ffc62e', dur:30, txt:'Cada golpe saca 7 veces más'},
+  {id:'turno',   name:'Turno doble',  ico:'helmet', col:'#3fcf6c', dur:60, txt:'La mina produce el doble'},
+  {id:'subasta', name:'Subasta',      ico:'coin',   col:'#3ea8ff', dur:60, txt:'Vendes el metal un 25 % más caro'},
+  {id:'lince',   name:'Ojo de lince', ico:'gem',    col:'#a06bff', dur:90, txt:'Pepitas y gemas salen el triple'},
+];

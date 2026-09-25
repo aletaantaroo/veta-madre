@@ -1,16 +1,18 @@
 import { K, on, selectDesk, updateUI } from '../core/bus.js';
 import { $, $$, esc, setT } from '../core/dom.js';
 import { clamp, clock, fmtT, money, nf0, nf1, pfmt, plab, smoney, toUnit, unitOf, weight } from '../core/format.js';
-import { EVENTS, METALS, MK, REGIMES } from '../data/content.js';
+import { EVENTS, GEMS, METALS, MK, REGIMES } from '../data/content.js';
+import { gemCount, gemPrice, gemValue, jewelEvery } from '../game/gems.js';
 import { reserved } from '../game/jobs.js';
 import { buyCap, createOrder, moves, openPos, sell } from '../game/market.js';
-import { S, ask, bid, cap, capCost, fee, has, impactOf, mk, physPrice, posPnl, refineBonus, sk, spread, unl } from '../game/state.js';
+import { S, ask, bid, cap, capCost, fee, frenteDepth, has, impactOf, mk, physPrice, posPnl, refineBonus, sk, spread, unl } from '../game/state.js';
+import { icon } from './icons.js';
 import { updateJobsMarket } from './jobs.js';
 import { metalSegHtml } from './layout.js';
 
 /* ---- mercado ---- */
 export let desk = 'sell';
-const DESKS = {sell:'#pSell', con:'#pCon', ord:'#pOrd', log:'#pLog'};
+const DESKS = {sell:'#pSell', gem:'#pGem', con:'#pCon', ord:'#pOrd', log:'#pLog'};
 function openDesk(k){
   if (!DESKS[k]) k = 'sell';
   desk = k;
@@ -105,6 +107,7 @@ function updateDesk(){
         : '<p class="empty">No hay órdenes activas.</p>';
     }
   }
+  updateGemDesk();
   if (desk === 'log' && K.log){
     K.log = false;
     $('#logList').innerHTML = S.log.length ? S.log.map(l => `<li data-tone="${l.tone}"><time>${clock(l.t)}</time><span>${esc(l.txt)}</span></li>`).join('') : '<li><time></time><span>Aún no hay operaciones.</span></li>';
@@ -129,3 +132,27 @@ export function updateTrading(){
       else S.positions.forEach(p => { const el = list.querySelector(`[data-pid="${p.id}"] [data-r=pnl]`); if (!el) return; const pnl = posPnl(p); setT(el, `${smoney(pnl)} (${nf1.format(pnl/p.margin*100)} %)`); el.className = 'pnl ' + (pnl>=0?'t-up':'t-down'); });
     }
   }
+
+/* ---- gemas: se venden aquí o desde el panel de la mina ---- */
+function updateGemDesk(){
+  const tab = $('#dtGem'), any = Object.keys(S.gemsFound || {}).length > 0;
+  tab.hidden = !any; const n = gemCount(), bg = $('#bGem'); bg.hidden = !n; setT(bg, String(n));
+  if (!any || desk !== 'gem') return;
+  const key = GEMS.map(g => (S.gems[g.id] || 0) + ':' + (S.gemsFound[g.id] ? 1 : 0) + ':' + Math.round((S.gemPx[g.id] || 1)*100)).join() + '|' + Math.round(frenteDepth());
+  if (key !== K.gemDesk){
+    K.gemDesk = key;
+    $('#gemList').innerHTML = GEMS.map(g => {
+      const c = S.gems[g.id] || 0, seen = !!S.gemsFound[g.id], open = frenteDepth() >= g.d, px = S.gemPx[g.id] || 1;
+      return `<div class="gem-it${seen ? '' : ' unseen'}" style="--gc:${g.col};--gh:${g.hi}">
+        <span class="gem-ic">${icon('gem')}</span>
+        <span class="gem-nm"><b>${seen ? g.name : open ? '¿?' : 'Aún no'}</b><small>${seen ? `${pfmtGem(g.id)} ${px >= 1.02 ? '<i class="t-up">▲</i>' : px <= .98 ? '<i class="t-down">▼</i>' : ''}` : open ? 'Ya puede salir' : `Desde ${nf0.format(g.d)} m de profundidad`}</small></span>
+        <span class="gem-n">×${c}</span>
+        <button type="button" class="btn sm btn-purple" data-act="sellGem" data-id="${g.id}" ${c ? '' : 'disabled'}>Vender</button></div>`;
+    }).join('');
+  }
+  setT($('#gemAllEst'), n ? `${n} gema${n > 1 ? 's' : ''} · ≈ ${money(gemValue())}` : 'No tienes gemas');
+  $('#gemSellAll').classList.toggle('cant', !n);
+  const st = S.biz.joyeria;
+  setT($('#gemJewel'), st && st.lv ? `Tu joyería engasta una gema cada ${jewelEvery()} s y la vende al doble (empieza por la más cara).` : 'Cuando abras la joyería, engastará tus gemas sola y las venderá al doble.');
+}
+const pfmtGem = id => `${money(gemPrice(id))} la pieza`;

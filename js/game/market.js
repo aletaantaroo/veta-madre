@@ -3,8 +3,9 @@ import { $ } from '../core/dom.js';
 import { clamp, fromUnit, gauss, money, nf0, pfmt, pick, rnd, smoney, weight } from '../core/format.js';
 import { BIZ, BIZ_EV, EVENTS, METALS, MK, NEWS, NSLOTS, REGIMES, RES_NEWS, STOCKS, ST_NEG, ST_POS, TPC, syn } from '../data/content.js';
 import { needs, rec, resTick } from './economy.js';
+import { gemTick } from './gems.js';
 import { contractsTick, reserved } from './jobs.js';
-import { betTick } from './minigames.js';
+import { betTick, mgInviteTick } from './minigames.js';
 import { checkAch, earn, log, silent } from './progress.js';
 import { S, ask, bid, bizCount, bizFull, bizLvl, cap, capCost, fee, has, impactOf, mk, newStock, posPnl, refineBonus, saleBonus, sk, unl } from './state.js';
 
@@ -68,7 +69,7 @@ export function tick(online){
   processPositions(); processOrders();
   if (!online) return;
   if ((newsTimer -= 1) <= 0) news();
-  eventTick(); contractsTick(); betTick(); rivalTick(); stockEvents(); bizTick(); dividends(); checkAch();
+  eventTick(); contractsTick(); betTick(); mgInviteTick(); gemTick(); rivalTick(); stockEvents(); bizTick(); dividends(); checkAch();
 }
 
 const lastNews = {};

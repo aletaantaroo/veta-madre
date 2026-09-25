@@ -1,3 +1,6 @@
+import { rgba } from '../core/format.js';
+import { iconImg } from '../ui/icons.js';
+
 /* Sprites de la mina: todo se dibuja con formas simples, relleno vivo y contorno de tinta.
    Cada función recibe (g, x, y, s, …): x,y es el punto de apoyo en el suelo y s la escala (1 ≈ un minero de 30 px). */
 const INK = '#2a1a0e';
@@ -399,4 +402,16 @@ export function drawCrewIcon(cv, id){
     case 'lix': tank(g, w*.34, gy, .9*k, 0, '#6ee07a'); tank(g, w*.68, gy, .75*k, 1, '#a4f06e', 3); break;
     case 'tbm': g.save(); g.translate(w*.78, 0); tbm(g, 0, gy, .62*k, .4); g.restore(); break;
   }
+}
+
+/* Burbuja de power-up: brillo del color de la ventaja, pompa translúcida y su icono dentro. */
+export function powerBubble(g, x, y, u, P, t){
+  const r = 19*u*(1 + .06*Math.sin(t*5));
+  const glow = g.createRadialGradient(x, y, r*.4, x, y, r*2.2); glow.addColorStop(0, rgba(P.col, .55)); glow.addColorStop(1, rgba(P.col, 0));
+  g.fillStyle = glow; g.beginPath(); g.arc(x, y, r*2.2, 0, 6.2832); g.fill();
+  g.fillStyle = rgba(P.col, .35); g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.fill();
+  g.lineWidth = 2.5*u; g.strokeStyle = '#2a1a0e'; g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = 2*u; g.beginPath(); g.arc(x, y, r*.72, 3.6, 4.6); g.stroke();
+  const img = iconImg(P.ico); if (img.complete && img.naturalWidth) g.drawImage(img, x - r*.72, y - r*.72, r*1.44, r*1.44);
+  for (let i = 0; i < 3; i++){ const a = t*2 + i*2.1, d = r*1.35; g.fillStyle = '#fff'; g.beginPath(); g.arc(x + Math.cos(a)*d, y + Math.sin(a)*d, (1.6 + Math.sin(t*6 + i))*u, 0, 6.2832); g.fill(); }
 }

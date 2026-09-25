@@ -6,10 +6,11 @@ import { BIZ, CREW, DAY_LEN, FINDS, GAL_DEPTH, METALS, MK, RARITY, STRATA } from
 import { gameMin, needs } from '../game/economy.js';
 import { collectFind, patTopo, secret, visibleFinds } from '../game/finds.js';
 import { collectNugget, dig, nugget } from '../game/mining.js';
+import { bubble, popBubble, powerById } from '../game/powerups.js';
 import { openVein } from '../game/shop.js';
 import { S, cap, capCost, fac, frenteDepth, gps, lvReq, stratumIdx, unl } from '../game/state.js';
 import { findImg } from './findArt.js';
-import { building, cage, cart, cloud, drill, excavator, headframe, lerpCol, miner, nuggetSprite, plant, rival, shade, solar, tank, tbm, tree, truck, turbine, vault } from './sprites.js';
+import { building, cage, cart, cloud, drill, excavator, headframe, lerpCol, miner, nuggetSprite, plant, powerBubble, rival, shade, solar, tank, tbm, tree, truck, turbine, vault } from './sprites.js';
 
 /* ================= La mina viva =================
    Un corte de la montaña que baja contigo: cielo con día y noche, superficie con el castillete, la caja fuerte y tus empresas,
@@ -18,9 +19,9 @@ const cv = $('#world'), g = cv.getContext('2d');
 const railCv = $('#railMap'), rgx = railCv.getContext('2d');
 let W = 0, H = 0, SD = 1, L = null, layoutAge = 99, frameDt = 0;
 let camY = 0, camTarget = null, camVel = 0, drag = null, lastVein = null, vetaBuf = '';
-let parts = [], floats = [], trucks = [], flashes = [], shake = 0, swingK = 0, blastCd = {au: 6, ag: 9, cu: 12}, lastRivalDumps = -1;
+let parts = [], floats = [], trucks = [], flashes = [], shake = 0, swingK = 0, blastCd = {au: 6, ag: 9, cu: 12, pt: 15}, lastRivalDumps = -1;
 let idleT = 0, sleeping = false, moonHits = 0, astroT = 0, flagDance = 0, topoVis = null, topoCd = 25;
-const MCOL = {au: {ore: '#ffc62e', hi: '#fff3b0', vein: ['#e0950b', '#ffe27a'], txt: '#ffd84a'}, ag: {ore: '#d7e2ef', hi: '#ffffff', vein: ['#8e9db0', '#f4f8fc'], txt: '#e8f0fa'}, cu: {ore: '#ff8a4c', hi: '#ffd0b0', vein: ['#b8521f', '#ffb27d'], txt: '#ffa06b'}};
+const MCOL = {au: {ore: '#ffc62e', hi: '#fff3b0', vein: ['#e0950b', '#ffe27a'], txt: '#ffd84a'}, ag: {ore: '#d7e2ef', hi: '#ffffff', vein: ['#8e9db0', '#f4f8fc'], txt: '#e8f0fa'}, cu: {ore: '#ff8a4c', hi: '#ffd0b0', vein: ['#b8521f', '#ffb27d'], txt: '#ffa06b'}, pt: {ore: '#b8c6ea', hi: '#f2f5ff', vein: ['#6a78a0', '#dfe6fb'], txt: '#dfe6ff'}};
 const TEX = [
   {base: '#c98b52', hi: '#e2a86c', lo: '#a36a3a', kind: 'sand'},
   {base: '#6f6a78', hi: '#8a8594', lo: '#54505e', kind: 'slate'},
@@ -697,6 +698,7 @@ function drawRail(t){
     else if (f.d <= frenteDepth() && (!f.night || dayK() < .35)){ const pul = 3.8 + Math.sin(t*6)*1; c.fillStyle = RARITY[f.rar].col; c.beginPath(); c.arc(w*.72, y, pul, 0, 6.2832); c.fill(); c.stroke(); }
   });
   if (nugget && S.opened[nugget.m]){ const y = map(L.gal[nugget.m].y); c.fillStyle = '#ffe27a'; c.beginPath(); c.arc(w*.5, y, 3.5 + Math.sin(t*8), 0, 6.2832); c.fill(); c.stroke(); }
+  if (bubble && bubble.m){ const y = map(L.gal[bubble.m].y), P = powerById(bubble.id); c.fillStyle = P.col; c.beginPath(); c.arc(w*.5, y, 4.5 + Math.sin(t*8)*1.5, 0, 6.2832); c.fill(); c.stroke(); }
   c.fillStyle = '#ff5b4f'; c.beginPath(); c.moveTo(0, fy - 5); c.lineTo(8, fy); c.lineTo(0, fy + 5); c.closePath(); c.fill(); c.stroke();
   c.strokeStyle = '#ff5b4f'; c.lineWidth = 2; c.beginPath(); c.moveTo(6, fy); c.lineTo(w, fy); c.stroke();
   const vy0 = map(camY + L.sy0), vy1 = map(camY + L.digTop), vh = Math.max(8, vy1 - vy0);
@@ -760,6 +762,12 @@ export function render(t, dt){
     if (!(nugget.life < 3 && Math.floor(t*6) % 2) && inView(y - 30, y + 30)) nuggetSprite(g, x, y, L.u, MCOL[nugget.m].ore, MCOL[nugget.m].hi, t);
     nugget.px = x; nugget.py = y;
   }
+  if (bubble && !bubble.m){ const open = openedList(), mid = camY + H*.45; bubble.m = open.reduce((b, m) => Math.abs(L.gal[m].y - mid) < Math.abs(L.gal[b].y - mid) ? m : b, open[0]); }
+  if (bubble && S.opened[bubble.m]){
+    const G = L.gal[bubble.m], P = powerById(bubble.id), u = L.u, x = G.x0 + (G.x1 - G.x0)*bubble.u, y = G.top + (G.y - G.top)*.42 + Math.sin(t*2.2)*5*u;
+    if (!(bubble.life < 3 && Math.floor(t*6) % 2) && inView(y - 40, y + 40)) powerBubble(g, x, y, u, P, t);
+    bubble.px = x; bubble.py = y;
+  }
   if (L.gy > v0 - 140){
     drawSurface(t, k);
     if (shiftPlate > 0){ shiftPlate -= dt; plate(g, L.shaftX - 60*L.u, L.gy - 104*L.u, 'Cambio de turno', '#ffc62e', '#2a1a0e', L.u*.8); }
@@ -779,6 +787,12 @@ function digPoint(){
   if (y - camY > L.sy0 && y - camY < L.digTop) return [x, y];
   const b = rectOf('#btnDig'); return b ? [b.left + b.width/2, b.top - 30 + camY] : [W/2, camY + H/2];
 }
+/* Punto de picado de otra galería: solo si se ve en pantalla (si no, no hace falta enseñarlo). */
+function digPointOf(m){
+  if (!L || m === S.vein) return digPoint();
+  const G = L.gal[m], x = G.x1 - 14*L.u, y = G.top + L.gh*.55;
+  return y - camY > L.sy0 && y - camY < L.digTop ? [x, y] : null;
+}
 function wake(){ idleT = 0; if (sleeping){ sleeping = false; const [x, y] = digPoint(); floater(x, y - 40*L.u, '¡Ya voy, ya voy!', '#fff5de', 17); } }
 function tapAt(x, sy){
   if (!L) return;
@@ -792,6 +806,7 @@ function tapAt(x, sy){
   if (L.flag && x > L.flag.x0 && x < L.flag.x1 && y > L.flag.y0 && y < L.flag.y1){ flagDance = 3; secret('s_bandera'); sfx('pop'); return; }
   if (topoVis && Math.hypot(x - topoVis.x, y - topoVis.y) < 32*u){ const g0 = patTopo(); floater(topoVis.x, topoVis.y - 30*u, `¡Gracias, topo! +${weight(g0)}`, '#ffd84a', 18); chipsAt(topoVis.x, topoVis.y, 12, S.vein); emit('fxOre', x, sy, S.vein); topoVis = null; topoCd = 50 + Math.random()*70; return; }
   for (const f of visibleFinds()){ const p = L.fpos[f.id]; if (p && Math.hypot(x - p.x, y - p.y) < 42*u){ chipsAt(p.x, p.y, 24, S.vein); flashes.push({x: p.x, y: p.y, life: .6, max: .6, r: 80*u}); emit('fxBurst', p.x, p.y - camY, RARITY[f.rar].col); collectFind(f.id); return; } }
+  if (bubble && bubble.px != null && Math.hypot(x - bubble.px, y - bubble.py) < 38*u){ const bx = bubble.px, by = bubble.py, P = powerById(bubble.id); popBubble(); flashes.push({x: bx, y: by, life: .6, max: .6, r: 90*u}); emit('fxBurst', bx, by - camY, P.col); floater(bx, by - 30*u, P.name + '!', '#fff5de', 22); return; }
   if (nugget && nugget.px != null && Math.hypot(x - nugget.px, y - nugget.py) < 34*u){ collectNugget(); return; }
   const vb = L.vaultBox; if (vb && x > vb.x0 && x < vb.x1 && y > vb.y0 && y < vb.y1){ emit('vaultTap'); sfx('ui'); return; }
   for (const m of MK){ const G = L.gal[m]; if (G.sign && x > G.sign.x0 && x < G.sign.x1 && y > G.sign.y0 && y < G.sign.y1){ openVein(m); return; } }
@@ -835,11 +850,18 @@ railCv.addEventListener('pointerdown', e => { if (!L) return; const r = railCv.g
 
 on('dig', (x, y, m, p) => {
   if (!L) return;
-  if (x == null){ [x, y] = digPoint(); x += (Math.random() - .5)*20; y += (Math.random() - .5)*20; }
+  if (x == null){ const pt = digPointOf(m); if (!pt){ emit('fxOre', W*.5, H*.5, m); return; } [x, y] = pt; x += (Math.random() - .5)*20; y += (Math.random() - .5)*20; }
   wake();
   swingK = 1; chipsAt(x, y, RM ? 4 : 10, m); floater(x, y - 12, '+' + weight(p), MCOL[m].txt, 20);
   if (!RM) shake = Math.max(shake, 2.2);
   emit('fxOre', x, y - camY, m);
+});
+on('gemFound', (G, x, y, src) => {
+  if (!L || S.section !== 'mina') return;
+  let px = x, py = y;
+  if (px == null){ const pt = src === 'crew' ? null : digPoint(); if (!pt) return; [px, py] = pt; }
+  for (let i = 0; i < 16 && parts.length < 420; i++){ const a = Math.random()*6.2832, v = 80 + Math.random()*160; parts.push({k: 'chip', x: px, y: py, vx: Math.cos(a)*v, vy: Math.sin(a)*v - 80, life: .8, max: .8, s: (2.5 + Math.random()*3)*L.u, col: i % 2 ? G.col : G.hi, r: Math.random()*6}); }
+  floater(px, py - 26*L.u, `¡${G.name}!`, G.hi, 24); emit('fxBurst', px, py - camY, G.col);
 });
 on('digFull', (x, y) => { if (!L) return; if (x == null) [x, y] = digPoint(); floater(x, y, '¡Almacén lleno!', '#ff7d72', 18); });
 on('nuggetGot', (m, g0) => { if (!nugget || nugget.px == null) return; const x = nugget.px, y = nugget.py; chipsAt(x, y, 22, m); floater(x, y - 16, '¡Pepita! +' + weight(g0), MCOL[m].txt, 24); emit('fxBurst', x, y - camY, MCOL[m].ore); });
