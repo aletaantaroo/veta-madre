@@ -1,83 +1,115 @@
 import { K } from '../core/bus.js';
 import { $, setT } from '../core/dom.js';
 import { fmtT, money, nf0, nf1, weight } from '../core/format.js';
-import { BIZ } from '../data/content.js';
+import { BIZ, BIZ_STAGE_LV, DISTRICTS, ROMAN, VECINOS } from '../data/content.js';
+import { bizFixedTotal } from '../game/economy.js';
 import { jewelEvery } from '../game/gems.js';
-import { S, bizCost, bizCount, bizFull, bizInc, bizLvl, bizMult, bizTotal, jewelPrice, jewelRate, lvReq, mgrCost, ownFrac, refineBonus, sk, unl } from '../game/state.js';
-import { building, cloud, tree } from '../render/sprites.js';
-import { bizSel, selectBiz } from './city.js';
+import { S, axCost, bizCost, bizCount, bizFixed, bizFull, bizIncAll, bizLvl, bizMult, bizTotal, hasAx, jewelGold, jewelPct, mgrCost, ownFrac, refineBonus, sk, stageOf, unl, vecOn } from '../game/state.js';
+import { LINK, LOCK_SVG, artOf, bizSel, fmtMult, updateCity } from './city.js';
+import { icon } from './icons.js';
 
-/* ---- empresas ---- */
-export function buildBiz(){
-  $('#bizGrid').innerHTML = BIZ.map(b => `<article class="card" data-b="${b.id}">
-    <canvas class="card-art" data-r="art" aria-hidden="true"></canvas>
-    <div class="card-head"><h3>${b.name}</h3><span class="lvl" data-r="lv"></span></div>
-    <p>${b.desc}</p>
-    <dl class="kv"><div><dt>Ingresos</dt><dd data-r="inc">—</dd></div><div><dt data-r="fxl">Efecto</dt><dd data-r="fx">—</dd></div></dl>
-    <p class="boost" data-r="boost"></p>
-    <div class="card-actions">
-      <button type="button" class="btn sm primary" data-act="bizUp" data-id="${b.id}" data-r="up">—</button>
-      <button type="button" class="btn sm" data-act="bizMgr" data-id="${b.id}" data-r="mgr">—</button>
-      <button type="button" class="btn sm" data-act="bizIpo" data-id="${b.id}" data-r="ipo">Salir a bolsa</button>
-      <button type="button" class="btn sm ghost" data-act="bizPause" data-id="${b.id}" data-r="pause" hidden>Pausar</button>
-      <button type="button" class="btn sm ghost" data-act="jewelGems" data-r="gems" hidden>Gemas</button>
-    </div></article>`).join('');
-}
-export function updateBiz(){
-  const on = unl('biz'); $('#bizLocked').hidden = on; $('#bizBody').hidden = !on;
-  setT($('#bizLocked'), `Las empresas se desbloquean en el nivel ${lvReq('biz')}. Estás en el ${S.level}: sigue minando y vendiendo para ganar experiencia.`);
-  setT($('#bizSum'), `${bizCount()} de ${BIZ.length} · ingresan ${money(bizTotal())}/s`);
-  if (!on) return;
-  const sel = bizSel();
-  const tk = BIZ.map(b => b.id + bizLvl(b.id) + (S.level >= b.lv ? 'a' : 'l') + (S.money >= bizCost(b) ? 'c' : '')).join() + sel;
-  if (tk !== K.bizTabs){
-    K.bizTabs = tk;
-    $('#bizTabs').innerHTML = BIZ.map(b => { const lv = bizLvl(b.id), avail = S.level >= b.lv, can = avail && S.money >= bizCost(b);
-      return `<button type="button" role="tab" data-biz="${b.id}" aria-selected="${b.id === sel}" class="${lv ? 'open' : avail ? 'sale' : 'locked'}${can ? ' can' : ''}"><b>${b.name}</b><small>${lv ? `nv ${lv}` : avail ? 'se vende' : `nivel ${b.lv}`}</small></button>`; }).join('');
+/* ================= ficha de la empresa elegida =================
+   En el escritorio es el panel de madera de la derecha; en el móvil, una hoja que sale desde abajo (se puede plegar).
+   Se redibuja entera cuando cambia algo de su estructura (nivel, etapa, anexos...) y los números se refrescan solos. */
+const cpBox = $('#cpIn'), panel = $('#cityPanel');
+const MGR_ICO = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="6.5" r="3.8" fill="#efe1c4" stroke="#2a1a0e" stroke-width="1.6"/><path d="M3 18a7 6 0 0 1 14 0z" fill="#efe1c4" stroke="#2a1a0e" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+export function buildBiz(){ panel.addEventListener('click', e => { if (e.target.closest('.cp-grip')){ panel.classList.toggle('min'); K.biz = ''; requestAnimationFrame(() => updateCity()); } }); }
+
+/* Efecto propio de cada empresa (tercera casilla de la ficha). */
+function fxOf(b, lv){
+  const st = S.biz[b.id] || {};
+  if (st.pub) return ['Tu parte', `${nf1.format(ownFrac(b)*100)} %`];
+  switch (b.id){
+    case 'joyeria': return ['Oro a joyas/s', lv ? (st.paused ? 'En pausa' : weight(jewelGold())) : `${nf1.format(jewelPct(1, false)*100)} %`];
+    case 'refineria': return ['Precio del metal', `+${nf0.format(refineBonus()*100)} %`];
+    case 'transporte': return ['Cajas fuertes', `+${nf0.format(((1 + .2*lv)*(hasAx('transporte', 'helipuerto') ? 1.25 : 1) - 1)*100)} %`];
+    case 'tec': return ['Rendimiento', lv ? `${nf0.format(S.tecF*100)} %` : 'Muy variable'];
+    case 'banco': return ['Rendimiento', 'Alto y fijo'];
+    default: return ['Rendimiento', 'Estable'];
   }
-  BIZ.forEach(b => {
-    const card = $(`[data-b="${b.id}"]`); if (!card) return;
-    card.hidden = b.id !== sel; if (card.hidden) return;
-    const st = S.biz[b.id] || {lv:0}, avail = S.level >= b.lv, q = r => card.querySelector(`[data-r="${r}"]`);
-    card.classList.toggle('off', !avail);
-    const art = q('art'), ak = Math.min(3, Math.floor((st.lv || 1)/8)) + '|' + (st.lv ? 1 : 0);
-    if (art.dataset.k !== ak && art.offsetWidth){ art.dataset.k = ak; drawBizArt(art, b.id, st.lv || 1, !st.lv); }
-    setT(q('lv'), st.lv ? `Nv ${st.lv}${st.mgr ? ' · con gerente' : ''}` : avail ? 'Sin abrir' : `Nivel ${b.lv}`);
-    let inc = bizInc(b), fxl = 'Efecto', fx = '—';
-    setT(card.querySelector('dt'), st.lv ? 'Ingresos' : 'Ingresos en nv 1');
-    if (b.id === 'joyeria'){ const r = jewelRate(); inc += (S.stock.au > 0 ? r*jewelPrice()*ownFrac(b) : 0); fxl = 'Consume'; fx = st.lv ? (st.paused ? 'En pausa' : `${weight(r)}/s de oro`) : `${weight(0.08*1.06)}/s de oro`; }
-    if (b.id === 'refineria'){ fxl = 'Precio de venta'; fx = `+${nf0.format(refineBonus()*100)} %`; }
-    if (b.id === 'transporte'){ fxl = 'Cajas fuertes'; fx = `+${nf0.format(bizLvl('transporte')*20)} %`; }
-    if (b.id === 'tec'){ fxl = 'Rendimiento'; fx = `${nf0.format(S.tecF*100)} %`; }
-    if (st.pub){ fxl = 'Tu participación'; fx = `${nf1.format(ownFrac(b)*100)} %`; }
-    setT(q('inc'), `${money(st.lv ? inc : b.inc*1.06*bizMult())}/s`);
-    setT(q('fxl'), fxl); setT(q('fx'), fx);
-    const bo = st.boost && st.boost.left > 0 ? st.boost : null;
-    setT(q('boost'), bo ? `${bo.mult > 1 ? '▲' : '▼'} Ingresos ×${nf1.format(bo.mult)} durante ${fmtT(bo.left)}` : '');
-    q('boost').className = 'boost ' + (bo ? (bo.mult > 1 ? 't-up' : 't-down') : '');
-    const up = q('up'), c = bizCost(b);
-    up.hidden = !avail; setT(up, st.lv >= 30 ? 'Nivel máximo' : `${st.lv ? 'Mejorar' : 'Abrir'} · ${money(c)}`); up.classList.toggle('cant', S.money < c || st.lv >= 30);
-    const mg = q('mgr'); mg.hidden = !st.lv || st.mgr; setT(mg, `Gerente · ${money(mgrCost(b))}`); mg.classList.toggle('cant', S.money < mgrCost(b));
-    const ipo = q('ipo'); ipo.hidden = !st.lv || st.pub || !unl('ipo');
-    if (!ipo.hidden){ const ok = st.lv >= 5; setT(ipo, ok ? `Salir a bolsa · +${money(bizFull(b)*900*.4*(sk('e6')?1.3:1))}` : 'Salir a bolsa (nv 5)'); ipo.classList.toggle('cant', !ok); }
-    const pz = q('pause'); pz.hidden = b.id !== 'joyeria' || !st.lv; setT(pz, st.paused ? 'Reanudar' : 'Pausar');
-    const gz = q('gems'); gz.hidden = b.id !== 'joyeria' || !st.lv; setT(gz, S.jewelGems === false ? 'Engastar gemas: no' : `Engastar gemas: sí (1 cada ${jewelEvery()} s)`);
-  });
+}
+const nextOf = lv => BIZ_STAGE_LV.find(l => l > lv);
+function nextTxt(b, lv, s, avail){
+  if (!lv) return avail ? `Ábrela por ${money(bizCost(b))}. Empieza como «${b.stages[0]}».` : `Se desbloquea en el nivel ${b.lv} (estás en el ${S.level}).`;
+  if (s >= 5) return 'Etapa máxima: el edificio ya no crece más.';
+  return `En el nv ${nextOf(lv)} pasa a «${b.stages[s]}»: +25 % de ingresos${s < 4 ? ' y un anexo nuevo' : ''}.`;
+}
+function panelHtml(b){
+  const st = S.biz[b.id] || {lv: 0}, lv = st.lv || 0, s = stageOf(lv), avail = S.level >= b.lv;
+  const ns = Math.min(5, Math.max(1, s + 1)), thumb = artOf(b, lv ? (s >= 5 ? 5 : ns) : 1, true);
+  const pips = [1, 2, 3, 4, 5].map(i => `<i class="${i <= s ? 'on' : ''}"></i>`).join('');
+  const built = b.anexos.filter(A => hasAx(b.id, A.id)).length;
+  const ax = b.anexos.map((A, i) => {
+    const isB = hasAx(b.id, A.id), open = lv && s >= i + 2, cls = isB ? 'built' : open ? 'buy' : 'locked';
+    const tail = isB ? '<span class="ax-tag">Hecho</span>' : open ? `<button type="button" class="btn sm btn-gold" data-act="bizAnx" data-id="${b.id}" data-i="${i}" data-r="ax${i}">—</button>` : `<span class="ax-lock">${LOCK_SVG}Etapa ${ROMAN[i + 2]}</span>`;
+    return `<div class="ax ${cls}"><span class="ax-st" style="${cls === 'buy' ? `background:${b.badge}` : ''}">${ROMAN[i + 2]}</span><span class="ax-tx"><b>${A.name}</b><small>${A.fx}</small></span>${tail}</div>`;
+  }).join('');
+  const vec = VECINOS.filter(V => V.a === b.id || V.b === b.id).map(V => {
+    const o = BIZ.find(x => x.id === (V.a === b.id ? V.b : V.a)), on = vecOn(V);
+    return `<div class="vec ${on ? 'on' : ''}"><span class="vec-i">${LINK}</span><span class="vec-tx"><b>${o.name}</b><small>${V.name}: ${V.txt}</small></span><span class="vec-tag">${on ? 'Activo' : bizLvl(o.id) ? 'Abre esta' : 'Sin abrir'}</span></div>`;
+  }).join('');
+  const ipoOk = unl('ipo') && lv;
+  const extra = lv ? [
+    st.mgr ? `<div class="cp-row ok">${MGR_ICO}<span>Gerente contratado: produce el doble${b.id === 'joyeria' ? ' y procesa más oro' : ''}</span><b>×2</b></div>`
+           : `<div class="cp-row">${MGR_ICO}<span>Sin gerente: rinde la mitad</span><button type="button" class="btn sm btn-gold" data-act="bizMgr" data-id="${b.id}" data-r="mgr">—</button></div>`,
+    ipoOk ? (st.pub ? `<div class="cp-row ok"><span class="cp-row-i">${icon('bull')}</span><span>Cotiza en bolsa: cobras el <b data-r="own">—</b> de sus beneficios</span></div>`
+                    : `<div class="cp-row"><span class="cp-row-i">${icon('bull')}</span><span>Salir a bolsa: vendes el 40 % de golpe</span><button type="button" class="btn sm" data-act="bizIpo" data-id="${b.id}" data-r="ipo">—</button></div>`) : '',
+    b.id === 'joyeria' ? `<div class="cp-row two"><button type="button" class="btn sm ghost" data-act="bizPause" data-id="joyeria">${st.paused ? 'Reabrir' : 'Cerrar'} la tienda</button><button type="button" class="btn sm ghost" data-act="jewelGems" data-r="gems">—</button></div>` : '',
+  ].join('') : '';
+  return `<button type="button" class="cp-grip" aria-label="Plegar o desplegar la ficha"><i></i></button>
+  <div class="cp-head">
+    <span class="cp-badge" style="background:${s ? b.badge : '#efe1c4'}">${s ? ROMAN[s] : LOCK_SVG}</span>
+    <div class="cp-tt"><small>${DISTRICTS[b.district] ? DISTRICTS[b.district].name : ''}</small><h2>${b.name}</h2></div>
+    <span class="cp-lv">${lv ? `Nv ${lv}` : avail ? 'En venta' : `Nivel ${b.lv}`}</span>
+  </div>
+  <p class="cp-desc">${b.desc}</p>
+  <div class="cp-stage">
+    <div class="cs-l">
+      <small>${lv ? `Etapa ${ROMAN[s]} de V` : 'Sin abrir'}</small>
+      <b>${lv ? b.stages[s - 1] : avail ? 'Solar en venta' : 'Solar cerrado'}</b>
+      <div class="pips">${pips}</div>
+      <div class="bar"><i data-r="prog"></i></div>
+      <span class="cs-next">${nextTxt(b, lv, s, avail)}</span>
+    </div>
+    <div class="cs-thumb" style="background:${b.ground}"><svg viewBox="-6 -34 212 232" aria-hidden="true"><g stroke="#2a1a0e" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">${thumb}</g></svg><span>${!lv ? 'Etapa I' : s >= 5 ? 'Máxima' : `Etapa ${ROMAN[ns]}`}</span></div>
+  </div>
+  <div class="cp-stats">
+    <div><small>${lv ? 'Ingresos/s' : 'Ingresos/s nv 1'}</small><b class="t-up" data-r="inc">—</b></div>
+    <div><small>Gastos fijos/s</small><b class="t-down" data-r="exp">—</b></div>
+    <div><small data-r="fxl">—</small><b data-r="fx">—</b></div>
+  </div>
+  <p class="cp-ev" data-r="ev" hidden></p>
+  <button type="button" class="btn big primary cp-up" data-act="bizUp" data-id="${b.id}" data-r="up">—</button>
+  ${extra}
+  <div class="cp-sec"><h3>Anexos</h3><small>${lv ? `${built} de 3 construidos` : 'Se abren con cada etapa'}</small></div>
+  <div class="ax-list">${ax}</div>
+  ${vec ? `<div class="cp-sec"><h3>Vecinos</h3><small>Bonus por compartir calle</small></div><div class="vec-list">${vec}</div>` : ''}`;
 }
 
-function drawBizArt(cv, id, lv, ghost){
-  const r = cv.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1), w = r.width, h = r.height;
-  cv.width = Math.round(w*d); cv.height = Math.round(h*d);
-  const g = cv.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0);
-  const sky = g.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, '#79c6ff'); sky.addColorStop(1, '#d6f0ff'); g.fillStyle = sky; g.fillRect(0, 0, w, h);
-  cloud(g, w*.18, h*.3, .7); cloud(g, w*.82, h*.2, .55);
-  g.fillStyle = '#a5dc86'; g.beginPath(); g.moveTo(0, h - 16); for (let x = 0; x <= w; x += 20) g.lineTo(x, h - 30 - Math.sin(x/60)*8); g.lineTo(w, h - 16); g.closePath(); g.fill();
-  g.fillStyle = '#6cc24a'; g.fillRect(0, h - 17, w, 17); g.strokeStyle = '#2a1a0e'; g.lineWidth = 2; g.beginPath(); g.moveTo(0, h - 17); g.lineTo(w, h - 17); g.stroke();
-  tree(g, w*.1, h - 15, .85, 1); tree(g, w*.9, h - 15, .75, 0);
-  const fl = 1 + Math.min(3, Math.floor(lv/8)), est = {joyeria: 33 + (fl-1)*10, refineria: 48 + (fl-1)*8, transporte: 36, inmo: 33 + (fl-1)*14, banco: 44 + (fl-1)*8, tec: 59 + (fl-1)*16}[id] || 40;
-  if (ghost) g.globalAlpha = .55;
-  building(g, id, w/2, h - 15, Math.min(1.7, (h - 26)/est), lv, 1, false);
-  g.globalAlpha = 1;
+export function updateBiz(){
+  updateCity();
+  setT($('#csCount'), `${bizCount()} de ${BIZ.length} empresas`);
+  setT($('#csInc'), `+${money(bizTotal())}/s`);
+  setT($('#csExp'), `gastos −${money(bizFixedTotal())}/s`);
+  const b = BIZ.find(x => x.id === bizSel()), st = S.biz[b.id] || {lv: 0}, lv = st.lv || 0, s = stageOf(lv), avail = S.level >= b.lv;
+  const key = [b.id, lv, s, !!st.mgr, JSON.stringify(st.ax || {}), !!st.pub, !!st.paused, avail, unl('ipo'), VECINOS.map(vecOn).join(), bizLvl('banco') > 0].join('|');
+  if (K.biz !== key){ K.biz = key; cpBox.innerHTML = panelHtml(b); }
+  const q = r => cpBox.querySelector(`[data-r="${r}"]`);
+  // números que cambian solos
+  const inc = lv ? bizIncAll(b) : b.inc*1.06*bizMult();
+  setT(q('inc'), `+${money(inc)}`);
+  setT(q('exp'), `−${money(lv ? bizFixed(b) : b.inc*1.06*bizMult()*.3)}`);
+  const [fl, fv] = fxOf(b, lv); setT(q('fxl'), fl); setT(q('fx'), fv);
+  const pr = q('prog'); if (pr){ const a = s ? BIZ_STAGE_LV[s - 1] : 0, z = nextOf(lv); pr.style.width = `${s >= 5 ? 100 : !lv ? 0 : Math.round((lv - a)/(z - a)*100)}%`; }
+  const bo = st.boost && st.boost.left > 0 ? st.boost : null, ev = q('ev');
+  ev.hidden = !bo || !lv;
+  if (bo){ ev.className = 'cp-ev ' + (bo.mult > 1 ? 'up' : 'down'); setT(ev, `${bo.mult > 1 ? '▲' : '▼'} ${bo.name || 'Evento'}: ingresos ×${fmtMult(bo.mult)} · quedan ${fmtT(bo.left)}`); }
+  const up = q('up'), c = bizCost(b);
+  setT(up, lv >= 30 ? 'Nivel máximo' : !avail ? `Se desbloquea en el nivel ${b.lv}` : lv ? `Mejorar a nv ${lv + 1} · ${money(c)}` : `Abrir · ${money(c)}`);
+  up.classList.toggle('cant', !avail || lv >= 30 || S.money < c); up.disabled = !avail || lv >= 30;
+  const mg = q('mgr'); if (mg){ const mc = mgrCost(b); setT(mg, `Contratar · ${money(mc)}`); mg.classList.toggle('cant', S.money < mc); }
+  const ipo = q('ipo'); if (ipo){ const ok = lv >= 5; setT(ipo, ok ? `+${money(bizFull(b)*900*.4*(sk('e6') ? 1.3 : 1))}` : 'Desde nv 5'); ipo.classList.toggle('cant', !ok); }
+  const own = q('own'); if (own) setT(own, `${nf1.format(ownFrac(b)*100)} %`);
+  const gz = q('gems'); if (gz){ setT(gz, S.jewelGems === false ? 'Gemas: no' : `Gemas: 1 cada ${jewelEvery()} s`); gz.title = 'Engastar gemas en las joyas (valen el doble que sueltas)'; }
+  b.anexos.forEach((A, i) => { const x = q('ax' + i); if (x){ const ac = axCost(b, i); setT(x, money(ac)); x.classList.toggle('cant', S.money < ac); } });
 }
-
-$('#bizTabs').addEventListener('click', e => { const b = e.target.closest('[data-biz]'); if (b) selectBiz(b.dataset.biz); });

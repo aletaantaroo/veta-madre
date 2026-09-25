@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="css/windows.css">
 <link rel="stylesheet" href="css/overlays.css">
 <link rel="stylesheet" href="css/descenso.css">
+<link rel="stylesheet" href="css/city.css">
 </head>
 <body>
 <!--APP-START-->
@@ -45,7 +46,7 @@
     <button type="button" data-sec="mina" id="navMina" class="gem gem-gold"><span class="d-ico" data-icon="pick"></span><span class="d-lbl">Mina</span></button>
     <button type="button" data-sec="mercado" id="navMercado" class="gem gem-blue"><span class="d-ico" data-icon="chart"></span><span class="d-lbl">Mercado</span><span class="badge" id="bNavMk" hidden>0</span></button>
     <button type="button" data-sec="finanzas" id="navFin" class="gem gem-green"><span class="d-ico" data-icon="bank"></span><span class="d-lbl">Finanzas</span><span class="badge warn" id="bNavFin" hidden>!</span></button>
-    <button type="button" data-sec="empresas" id="navEmpresas" class="gem gem-orange"><span class="d-ico" data-icon="factory"></span><span class="d-lbl">Empresas</span></button>
+    <button type="button" data-sec="empresas" id="navEmpresas" class="gem gem-orange"><span class="d-ico" data-icon="factory"></span><span class="d-lbl">Ciudad</span></button>
     <button type="button" data-sec="bolsa" id="navBolsa" class="gem gem-cyan"><span class="d-ico" data-icon="bull"></span><span class="d-lbl">Bolsa</span></button>
     <button type="button" data-sec="minijuegos" id="navMg" class="gem gem-pink"><span class="d-ico" data-icon="dice"></span><span class="d-lbl">Minijuegos</span><span class="badge" id="bNavMg" hidden>0</span></button>
     <button type="button" data-sec="habilidades" id="navHab" class="gem gem-purple"><span class="d-ico" data-icon="star"></span><span class="d-lbl">Habilidades</span><span class="badge" id="bNavSp" hidden>0</span></button>
@@ -456,19 +457,20 @@
   </section>
 
   <!-- ================= EMPRESAS ================= -->
-  <section class="sec win-wrap" id="sec-empresas" hidden>
-    <div class="win win-orange">
-      <header class="win-head"><span class="win-ico" data-icon="factory"></span><h2>Tus empresas</h2><span class="win-meta" id="bizSum">—</span><button type="button" class="win-x" data-go="mina" aria-label="Cerrar">×</button></header>
-      <div class="win-body">
-        <p class="locked big-lock" id="bizLocked">—</p>
-        <div id="bizBody" class="desk-panel">
-          <div class="city-wrap"><canvas id="cityCv" role="img" aria-label="Tu ciudad: toca un edificio para verlo"></canvas><span class="city-hint" id="cityHint">Toca un edificio</span></div>
-          <div class="biz-tabs" id="bizTabs" role="tablist" aria-label="Empresas"></div>
-          <div class="ticker" id="bizTicker">Invierte lo que gana la mina en negocios que trabajen solos. Un gerente duplica lo que produce cada empresa.</div>
-          <div class="biz-grid one" id="bizGrid"></div>
-        </div>
+  <section class="sec sec-city" id="sec-empresas" hidden>
+    <div class="city-view" id="cityView" aria-label="Tu ciudad: toca un edificio para ver su ficha. Arrastra para moverte.">
+      <div class="city-stage" id="cityStage"></div>
+    </div>
+    <div class="city-top">
+      <div class="city-sum">
+        <span class="cs-ico" data-icon="factory"></span>
+        <span class="cs-txt"><small>Tu ciudad</small><b id="csCount">—</b></span>
+        <span class="cs-nums"><b id="csInc">—</b><small id="csExp">—</small></span>
       </div>
     </div>
+    <aside class="city-panel" id="cityPanel" aria-label="Ficha de la empresa">
+      <div class="cp-in" id="cpIn"></div>
+    </aside>
   </section>
 
   <!-- ================= BOLSA ================= -->
@@ -701,10 +703,10 @@
         <ul><li>Los precios se mueven con noticias, datos económicos y la mina rival.</li>
         <li><b>Contratos</b> pagan más; <b>órdenes</b> venden solas; el <b>trading</b> multiplica ganancias y pérdidas.</li></ul></div>
       <div><h3>El imperio</h3>
-        <ul><li><b>Empresas</b> que trabajan solas y <b>bolsa</b> para invertir o sacar tus empresas a cotizar.</li>
+        <ul><li>Tu <b>ciudad</b>: empresas que trabajan solas y crecen por <b>etapas</b>, con <b>anexos</b> y bonus entre <b>vecinos</b>. En la <b>bolsa</b> inviertes o sacas tus empresas a cotizar.</li>
         <li>En el nivel 22 puedes <b>vender la compañía</b>: ganas lingotes para la <b>tienda de legado</b>.</li></ul></div>
       <div><h3>Atajos</h3>
-        <ul><li><b>Espacio</b> pica · <b>Esc</b> abre este menú · <b>1–8</b> cambian de sección · <b>flechas</b> suben y bajan por la mina.</li>
+        <ul><li><b>Espacio</b> pica · <b>Esc</b> abre este menú · <b>1–9</b> cambian de sección · <b>flechas</b> suben y bajan por la mina.</li>
         <li>Si el panel de <b>producción</b> se pone amarillo o rojo, tócalo: te dice qué va mal y cómo arreglarlo. Los avisos quedan en la <b>campana</b>.</li></ul></div>
     </div>
   </div>

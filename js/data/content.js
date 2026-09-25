@@ -129,7 +129,7 @@ export const UNLOCKS = [
   {lv:8,  key:'ag',        txt:'Yacimiento de plata'},
   {lv:10, key:'trading',   txt:'Trading con apalancamiento (en Minijuegos)'},
   {lv:11, key:'taxes',     txt:'Hacienda te encuentra: impuestos cada 5 min'},
-  {lv:12, key:'biz',       sec:'empresas', txt:'Empresas'},
+  {lv:12, key:'biz',       sec:'empresas', txt:'La ciudad de empresas'},
   {lv:15, key:'cu',        txt:'Yacimiento de cobre'},
   {lv:18, key:'pt',        txt:'Yacimiento de platino'},
   {lv:20, key:'stocks',    sec:'bolsa',    txt:'Bolsa de valores'},
@@ -195,15 +195,59 @@ export const SYNERGIES = [
   {id:'wall',    name:'Lobo de Wall Street',   req:['t7','e6'], desc:'Dividendos +25 %.'},
 ];
 export const syn = id => { const X = SYNERGIES.find(x => x.id === id); return !!X && X.req.every(r => S.skills && S.skills[r]); };
+/* ---- ciudad de empresas (v14) ----
+   Cada empresa tiene un solar en el mapa (cell: esquina del solar en el plano de 1440 × 900), un barrio, cinco etapas
+   (el edificio cambia en los niveles 1, 5, 10, 20 y 30) y tres anexos que se abren en las etapas II, III y IV.
+   Para añadir una empresa nueva basta con otra entrada aquí (y su dibujo en render/cityArt.js; si no lo tiene, sale uno genérico).
+   Los costes y los ingresos de la v14 están ajustados a lo que gana la mina cuando se desbloquea cada una. */
+export const BIZ_STAGE_LV = [1, 5, 10, 20, 30];
+export const DISTRICTS = {centro: {name: 'Centro', en: 'el centro'}, poligono: {name: 'Polígono industrial', en: 'el polígono industrial'}, parque: {name: 'Parque tecnológico', en: 'el parque tecnológico'}};
+export const ROMAN = ['—', 'I', 'II', 'III', 'IV', 'V'];
 export const BIZ = [
-  {id:'joyeria',    name:'Joyería',            lv:12, cost:5000,  inc:4,     desc:'Convierte tu oro en joyas y las vende un 30 % por encima del spot. Consume oro de tu almacén.'},
-  {id:'refineria',  name:'Refinería',          lv:13, cost:25000, inc:70,    desc:'Cada nivel sube un 2 % el precio al que vendes tu metal físico (hasta +40 %).'},
-  {id:'transporte', name:'Transporte blindado',lv:15, cost:80000, inc:200,   desc:'Cada nivel amplía un 20 % todas tus cajas fuertes.'},
-  {id:'inmo',       name:'Inmobiliaria',       lv:17, cost:3e5,   inc:800,   desc:'Alquileres: ingresos estables y sin sorpresas.'},
-  {id:'banco',      name:'Banco',              lv:19, cost:2e6,   inc:5000,  desc:'Presta a otras empresas: ingresos altos y constantes.'},
-  {id:'tec',        name:'Tecnológica',        lv:21, cost:1.5e7, inc:40000, desc:'Ingresos enormes pero muy variables: su rendimiento cambia cada minuto.'},
+  {id:'joyeria',    name:'Joyería',             lv:12, cost:4e4,  inc:60,    district:'centro',   cell:[70, 200],  badge:'#ff5fa8', ground:'#9fdc7c',
+   desc:'Convierte parte de tu oro en joyas y las vende un 30 % por encima del spot. Cuanto más nivel, más oro procesa.',
+   stages:['Puesto', 'Tienda', 'Boutique', 'Galería', 'Casa de joyas'],
+   anexos:[{id:'escaparate', name:'Escaparate de lujo', fx:'Las joyas se venden un 10 % más caras'},
+           {id:'engaste',    name:'Taller de engaste',  fx:'Gasta un 20 % menos de oro por joya'},
+           {id:'seguridad',  name:'Seguridad privada',  fx:'Las averías e inspecciones no le afectan'}]},
+  {id:'refineria',  name:'Refinería',           lv:13, cost:4e5,  inc:450,   district:'poligono', cell:[70, 560],  badge:'#6b7785', ground:'#d6d1c6',
+   desc:'Cada nivel sube un 2 % el precio al que vendes tu metal físico (hasta +40 %).',
+   stages:['Taller', 'Fundición', 'Refino', 'Planta', 'Complejo metalúrgico'],
+   anexos:[{id:'horno',  name:'Horno de arco',          fx:'Ingresos de la refinería +15 %'},
+           {id:'pureza', name:'Laboratorio de pureza',  fx:'Tu metal se vende un 5 % más caro'},
+           {id:'tren',   name:'Apartadero de tren',     fx:'Sus gastos fijos bajan un 25 %'}]},
+  {id:'transporte', name:'Transporte blindado', lv:15, cost:3e6,  inc:3300,  district:'poligono', cell:[425, 560], badge:'#e0950b', ground:'#d6d1c6',
+   desc:'Cada nivel amplía un 20 % todas tus cajas fuertes.',
+   stages:['Garaje', 'Nave', 'Base', 'Centro logístico', 'Central de valores'],
+   anexos:[{id:'taller',     name:'Taller mecánico', fx:'Sus gastos fijos bajan un 20 %'},
+           {id:'escolta',    name:'Escolta armada',  fx:'Los encargos nuevos dan un 25 % más de plazo'},
+           {id:'helipuerto', name:'Helipuerto',      fx:'Cajas fuertes un 25 % más grandes'}]},
+  {id:'inmo',       name:'Inmobiliaria',        lv:17, cost:5e7,  inc:5.5e4, district:'centro',   cell:[770, 200], badge:'#12918a', ground:'#9fdc7c',
+   desc:'Alquileres: ingresos estables y sin sorpresas.',
+   stages:['Oficina', 'Adosados', 'Bloque de pisos', 'Urbanización', 'Rascacielos'],
+   anexos:[{id:'ventas',    name:'Oficina de ventas',   fx:'Ingresos de la inmobiliaria +15 %'},
+           {id:'piscina',   name:'Piscina comunitaria', fx:'Alquileres un 10 % más caros'},
+           {id:'hipotecas', name:'Hipotecas propias',   fx:'Tus préstamos pagan un 30 % menos de interés'}]},
+  {id:'banco',      name:'Banco',               lv:19, cost:5e8,  inc:5.5e5, district:'centro',   cell:[425, 200], badge:'#c9ab7c', ground:'#9fdc7c',
+   desc:'Presta a otras empresas: ingresos altos y constantes.',
+   stages:['Sucursal', 'Banco', 'Sede', 'Torre financiera', 'Banco central'],
+   anexos:[{id:'cajero', name:'Cajero automático', fx:'Ingresos del banco +10 %'},
+           {id:'camara', name:'Cámara acorazada',  fx:'Tu efectivo rinde un 1 % cada día (hasta 1 min de ingresos)'},
+           {id:'mesa',   name:'Mesa de inversión', fx:'Dividendos de la bolsa +20 %'}]},
+  {id:'tec',        name:'Tecnológica',         lv:21, cost:4e9,  inc:3.5e6, district:'parque',   cell:[770, 560], badge:'#3ea8ff', ground:'#9fdc7c',
+   desc:'Ingresos enormes pero muy variables: su rendimiento cambia cada minuto.',
+   stages:['Garaje', 'Coworking', 'Campus', 'Sede circular', 'Torre tecnológica'],
+   anexos:[{id:'datos',  name:'Centro de datos',    fx:'Nunca rinde por debajo del 80 %'},
+           {id:'idi',    name:'Laboratorio de I+D', fx:'+1 punto de habilidad'},
+           {id:'antena', name:'Antena 5G',          fx:'Los eventos buenos de tus empresas duran el doble'}]},
 ];
-BIZ.forEach(b => b.inc *= PACE);
+/* Vecinos: dos empresas que comparten calle se ayudan cuando las dos están abiertas. */
+export const VECINOS = [
+  {a:'joyeria',   b:'banco',      name:'Joyas a crédito',       fx:{joyeria:.15},             txt:'la joyería gana un 15 % más'},
+  {a:'banco',     b:'inmo',       name:'Hipotecas',             fx:{inmo:.15},                txt:'la inmobiliaria gana un 15 % más'},
+  {a:'refineria', b:'transporte', name:'Metal blindado',        fx:{refineria:.1, transporte:.1}, txt:'+10 % de ingresos a las dos'},
+  {a:'transporte',b:'tec',        name:'Logística inteligente', fx:{transporte:.1, tec:.1},   txt:'+10 % de ingresos a las dos'},
+];
 export const STOCKS = [
   {id:'CIE', name:'Minas del Cierzo',     sector:'Minería de oro',   p:42,  vol:.005, mu:.00004, beta:{au:1.3}, div:0,     desc:'Tu rival. Se mueve con el oro, pero más fuerte.'},
   {id:'ARG', name:'Argenta Metales',      sector:'Minería de plata', p:18,  vol:.006, mu:.00003, beta:{ag:1.2}, div:.001,  desc:'Sigue a la plata con fuerza.'},
@@ -217,10 +261,10 @@ export const STOCKS = [
 export const ST_POS = ['{n} presenta resultados mejores de lo esperado','{n} firma un contrato enorme','Un analista recomienda comprar {n}','{n} anuncia recompra de acciones'];
 export const ST_NEG = ['{n} decepciona con sus resultados','{n} retrasa un proyecto clave','Dimite por sorpresa el consejero delegado de {n}','El regulador abre una investigación a {n}'];
 export const BIZ_EV = [
-  {txt:'Temporada alta en {n}: ingresos ×2 durante 60 s', mult:2, left:60, tone:'up'},
-  {txt:'{n} sale en la prensa: ingresos ×1,5 durante 90 s', mult:1.5, left:90, tone:'up'},
-  {txt:'Avería en {n}: ingresos a la mitad durante 45 s', mult:.5, left:45, tone:'down'},
-  {txt:'Inspección en {n}: ingresos a cero durante 20 s', mult:0, left:20, tone:'down'},
+  {name:'Temporada alta', txt:'Temporada alta en {n}: ingresos ×2 durante 60 s', mult:2, left:60, tone:'up'},
+  {name:'Sale en la prensa', txt:'{n} sale en la prensa: ingresos ×1,5 durante 90 s', mult:1.5, left:90, tone:'up'},
+  {name:'Avería', txt:'Avería en {n}: ingresos a la mitad durante 45 s', mult:.5, left:45, tone:'down'},
+  {name:'Inspección', txt:'Inspección en {n}: ingresos a cero durante 20 s', mult:0, left:20, tone:'down'},
 ];
 export const ACH = [
   {id:'a_click1', name:'Primer golpe', desc:'Pica la roca por primera vez.', test:()=>S.clicks>=1},
@@ -313,7 +357,7 @@ export const TUTS = {
   loans:     {t:'Nuevo: préstamos', sec:'finanzas', s:['El banco te presta para crecer más rápido.','Cobra un <b>0,5 % por minuto</b>: invierte en algo que devuelva más que eso.','Devuelve la deuda en cuanto puedas.']},
   ag:        {t:'Nuevo: plata', sec:'mina', s:['Abre el yacimiento desde el selector <b>Oro · Plata · Cobre</b> de la mina.','Todas tus minas producen a la vez; cada mina extra sube un 50 % la plantilla.','La plata se mueve mucho más que el oro: más riesgo y más oportunidades.']},
   taxes:     {t:'Hacienda', sec:'finanzas', s:['Cada 5 minutos pagas un 10 % de tu beneficio.','Si en ese periodo pierdes dinero, no pagas.','El <b>Asesor fiscal</b> (Mejoras) lo baja al 5 %.']},
-  biz:       {t:'Nuevo: empresas', sec:'empresas', s:['Invierte lo que gana la mina en negocios que <b>trabajan solos</b>.','Un <b>gerente</b> duplica lo que produce cada empresa.','Tienen gastos fijos: una mala racha también cuesta dinero.']},
+  biz:       {t:'Nuevo: tu ciudad', sec:'empresas', s:['Compra solares en la <b>ciudad</b> y monta empresas que <b>trabajan solas</b>.','Al subir de nivel el edificio crece por <b>etapas</b> (niveles 5, 10, 20 y 30): cada una da +25 % y abre un <b>anexo</b>.','Un <b>gerente</b> duplica lo que produce. Las empresas <b>vecinas</b> se ayudan entre sí.']},
   cu:        {t:'Nuevo: cobre', sec:'mina', s:['Ábrelo desde el selector de la mina.','El cobre sigue a la economía: sube cuando la industria va bien, aunque el oro baje.']},
   pt:        {t:'Nuevo: platino', sec:'mina', s:['Ábrelo desde el panel de Producción de la mina.','El platino es metal precioso e industrial a la vez: sube con la industria y con los coches.']},
   gems:      {t:'Nuevo: gemas', sec:'mina', s:['Al picar (y de vez en cuando, con tu equipo) salen <b>gemas</b>. Cuanto más hondo llega tu mina, más valiosas.','Véndelas desde el panel de Producción o en el Mercado. Si tienes joyería, las engasta sola y las vende al doble.']},

@@ -1,5 +1,5 @@
 import { rnd } from '../core/format.js';
-import { BIZ, CLICK_PACE, CLICK_UPS, CREW, FIND_SETS, GAL_DEPTH, METALS, MK, PACE, REGIMES, SAVE_KEY, SPREAD, STOCKS, STRATA, UNLOCKS, syn } from '../data/content.js';
+import { BIZ, BIZ_STAGE_LV, CLICK_PACE, CLICK_UPS, CREW, FIND_SETS, GAL_DEPTH, METALS, MK, REGIMES, SAVE_KEY, SPREAD, STOCKS, STRATA, UNLOCKS, VECINOS, syn } from '../data/content.js';
 import { isDay } from './economy.js';
 import { refIncome } from './progress.js';
 
@@ -58,7 +58,7 @@ export const bizCount = () => BIZ.filter(b => bizLvl(b.id) > 0).length;
    Al principio, cuando la mina apenas produce, hay un mínimo que crece al doble por nivel. */
 const vaultSecs = l => 60*Math.pow(1.35, l);
 const capEq = l => Math.max(5*Math.pow(2, l), (S.peakGps || 0)*vaultSecs(l));
-const vaultMult = () => (1 + 0.2*bizLvl('transporte'))*(sk('m10') ? 2 : 1);
+const vaultMult = () => (1 + 0.2*bizLvl('transporte'))*(sk('m10') ? 2 : 1)*(hasAx('transporte', 'helipuerto') ? 1.25 : 1);
 const capOf = (m,l) => capEq(l)*metalConv(m)*vaultMult();
 export const cap = m => capOf(m, S.cap);
 /* Minutos de producción que caben ahora (y con el nivel siguiente). */
@@ -66,7 +66,7 @@ export const vaultMin = (l = S.cap) => capEq(l)*vaultMult()/Math.max(1e-9, S.pea
 /* Cada ampliación cuesta segundos de lo que ingresas (30 s el primero y un 60 % más cada nivel), con un mínimo para el principio. */
 export const capCost = l => Math.max(250*Math.pow(3.2, l), refIncome()*30*Math.pow(1.6, l))*(sk('m4')?0.7:1);
 export const fee = () => (has('u_tasador')?0.01:0.03)*(sk('t1')?0.6:1);
-export const refineBonus = () => Math.min(0.4, 0.02*bizLvl('refineria')*(sk('e4')?2:1));
+export const refineBonus = () => Math.min(0.4, 0.02*bizLvl('refineria')*(sk('e4')?2:1)) + (hasAx('refineria', 'pureza') ? .05 : 0);
 export const saleBonus = () => sk('t10') ? 1.1 : 1;
 export const physPrice = m => mk(m).price*(1-fee())*(1+refineBonus())*saleBonus()*(buff('subasta') ? 1.25 : 1);
 export const spread = () => SPREAD*(sk('t2')?0.5:1);
@@ -88,17 +88,42 @@ export function maxN(c){ const k=S.owned[c.id]||0; const b=c.cost*Math.pow(1.15,
 
 /* ---- empresas ---- */
 export const bizMult = () => (sk('e2')?1.25:1)*(sk('e5')?1.4:1)*(sk('e7')?1.5:1)*achMult()*legMult()*(setDone('mis') ? 1.1 : 1)*(syn('cadena') ? 1.15 : 1);
-export const bizCost = b => b.cost*Math.pow(1.55, bizLvl(b.id))*(sk('e1')?0.85:1)*(sk('e8')?0.7:1);
+/* Etapa del edificio: 0 = solar sin abrir, 1-5 según el nivel (1, 5, 10, 20 y 30). Cada etapa suma un 25 % de ingresos. */
+export const stageOf = lv => BIZ_STAGE_LV.reduce((s, l, i) => lv >= l ? i + 1 : s, 0);
+export const bizStage = id => stageOf(bizLvl(id));
+const stageMult = lv => Math.pow(1.25, Math.max(0, stageOf(lv) - 1));
+/* Coste de pasar del nivel l al l+1: un 40 % más por nivel hasta el 10 y solo un 28 % a partir de ahí (v14: antes era un 55 % siempre). */
+const costCurve = l => Math.pow(1.4, Math.min(l, 10))*Math.pow(1.28, Math.max(0, l - 10));
+const bizDisc = () => (sk('e1')?0.85:1)*(sk('e8')?0.7:1);
+const bizCostAt = (b, l) => b.cost*costCurve(l)*bizDisc();
+export const bizCost = b => bizCostAt(b, bizLvl(b.id));
 export const mgrCost = b => b.cost*8*(sk('e3')?0.5:1);
-export function bizFull(b){ const st = S.biz[b.id]; if (!st || !st.lv) return 0; let v = b.inc*st.lv*Math.pow(1.06, st.lv)*bizMult()*(st.mgr?2:1); if (b.id==='tec') v *= S.tecF; if (sk('e9') && topBiz() === b.id) v *= 3; return v; }
+/* Anexos: el anexo i se abre en la etapa II, III o IV y cuesta el doble que el nivel en que se abre. */
+export const hasAx = (id, ax) => !!(S.biz[id] && S.biz[id].ax && S.biz[id].ax[ax]);
+export const axCost = (b, i) => bizCostAt(b, BIZ_STAGE_LV[i + 1])*2;
+const AX_INC = {refineria: {horno: .15}, inmo: {ventas: .15, piscina: .10}, banco: {cajero: .10}};
+function axIncMult(id){ const T = AX_INC[id]; let m = 1; if (T) for (const k in T) if (hasAx(id, k)) m *= 1 + T[k]; return m; }
+/* Vecinos: activos cuando las dos empresas están abiertas. */
+export const vecOn = V => bizLvl(V.a) > 0 && bizLvl(V.b) > 0;
+const vecBonus = id => VECINOS.reduce((a, V) => a + (vecOn(V) && V.fx[id] ? V.fx[id] : 0), 0);
+/* Tamaño de la empresa: lo que ingresa sin eventos, anexos ni vecinos. Los gastos fijos son un 30 % de esto. */
+function bizBase(b){ const st = S.biz[b.id]; if (!st || !st.lv) return 0; return b.inc*st.lv*Math.pow(1.06, st.lv)*stageMult(st.lv)*bizMult()*(st.mgr?2:1); }
+export function bizFull(b){ let v = bizBase(b); if (!v) return 0; v *= axIncMult(b.id)*(1 + vecBonus(b.id)); if (b.id==='tec') v *= S.tecF; if (sk('e9') && topBiz() === b.id) v *= 3; return v; }
+export const bizFixed = b => 0.3*bizBase(b)*ownFrac(b)*(b.id === 'refineria' && hasAx('refineria', 'tren') ? .75 : 1)*(b.id === 'transporte' && hasAx('transporte', 'taller') ? .8 : 1);
 /* La empresa de más nivel (para «Monopolio»). */
 function topBiz(){ let best = null, lv = 0; BIZ.forEach(b => { const l = bizLvl(b.id); if (l > lv){ lv = l; best = b.id; } }); return best; }
 const boostOf = st => st && st.boost && st.boost.left > 0 ? st.boost.mult : 1;
 export function ownFrac(b){ const st = S.biz[b.id]; if (!st || !st.pub) return 1; const h = S.hold['own_'+b.id]; return (h ? h.n : 0)/st.pub.shares; }
 export const bizInc = b => bizFull(b)*boostOf(S.biz[b.id])*ownFrac(b);
-export function jewelRate(){ const st = S.biz.joyeria; if (!st || !st.lv || st.paused) return 0; return 0.08*PACE*st.lv*Math.pow(1.06,st.lv)*(st.mgr?2:1)*boostOf(st)*bizMult()/(achMult()*legMult()); }
-export const jewelPrice = () => mk('au').price*1.3*(sk('e4')?1.15:1)*(syn('joyero')?1.2:1);
-export function bizTotal(){ let v = 0; BIZ.forEach(b => v += bizInc(b)); const jr = jewelRate(); if (jr && S.stock.au > 0) v += jr*jewelPrice()*ownFrac(BIZ[0]); return v; }
+/* Joyería: convierte en joyas una parte del oro que produces (del 4,5 % en el nivel 1 al 48 % en el 30; ×1,5 con gerente). */
+export const jewelPct = (lv = bizLvl('joyeria'), mgr = S.biz.joyeria && S.biz.joyeria.mgr) => lv ? Math.min(.75, (.03 + .015*lv)*(mgr ? 1.5 : 1)) : 0;
+export function jewelRate(){ const st = S.biz.joyeria; if (!st || !st.lv || st.paused) return 0; return gps('au')*jewelPct()*boostOf(st); }
+export const jewelGold = () => jewelRate()*(hasAx('joyeria', 'engaste') ? .8 : 1);
+export const jewelPrice = () => mk('au').price*1.3*(sk('e4')?1.15:1)*(syn('joyero')?1.2:1)*(hasAx('joyeria', 'escaparate') ? 1.1 : 1);
+export const jobTimeMult = () => hasAx('transporte', 'escolta') ? 1.25 : 1;
+/* Lo que ingresa una empresa (la joyería suma lo que saca vendiendo joyas). */
+export const bizIncAll = b => bizInc(b) + (b.id === 'joyeria' && S.stock.au > 0 ? jewelRate()*jewelPrice()*ownFrac(b) : 0);
+export const bizTotal = () => BIZ.reduce((a, b) => a + bizIncAll(b), 0);
 export function allStocks(){
   const own = BIZ.filter(b => S.biz[b.id] && S.biz[b.id].pub).map(b => ({id:'own_'+b.id, name:`${b.name} Veta Madre`, sector:'Tu empresa', own:true, bizId:b.id, div:0, beta:{}, desc:'Es tu empresa: cobras de sus beneficios el porcentaje de acciones que tengas.'}));
   return STOCKS.concat(own);

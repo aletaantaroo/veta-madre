@@ -1,13 +1,13 @@
 import { K, bump, drawChart, emit, setTicker, sfx, toast, updateUI } from '../core/bus.js';
 import { $ } from '../core/dom.js';
-import { clamp, fromUnit, gauss, money, nf0, pfmt, pick, rnd, smoney, weight } from '../core/format.js';
+import { clamp, fromUnit, gauss, money, pfmt, pick, rnd, smoney, weight } from '../core/format.js';
 import { BIZ, BIZ_EV, EVENTS, METALS, MK, NEWS, NSLOTS, REGIMES, RES_NEWS, STOCKS, ST_NEG, ST_POS, TPC, syn } from '../data/content.js';
 import { needs, rec, resTick } from './economy.js';
 import { gemTick } from './gems.js';
 import { contractsTick, reserved } from './jobs.js';
 import { betTick, mgInviteTick } from './minigames.js';
 import { checkAch, earn, log, silent } from './progress.js';
-import { S, ask, bid, bizCount, bizFull, bizLvl, cap, capCost, fee, has, impactOf, mk, newStock, posPnl, refineBonus, saleBonus, sk, unl } from './state.js';
+import { S, ask, bid, bizCount, bizFull, bizLvl, cap, capCost, fee, has, hasAx, impactOf, mk, newStock, posPnl, refineBonus, saleBonus, sk, unl } from './state.js';
 
 /* ================= mercados ================= */
 let newsTimer = 35, autoSellCd = 0, divTimer = 60, tecTimer = 60, bizEvTimer = 90, stEvTimer = 50;
@@ -146,22 +146,23 @@ function dividends(){
   if ((divTimer -= 1) > 0) return;
   divTimer = 60;
   let tot = 0;
-  STOCKS.forEach(d => { const h = S.hold[d.id]; if (h && h.n > 0 && d.div > 0) tot += h.n*S.stocks[d.id].p*d.div*(sk('t7')?1.5:1)*(syn('wall')?1.25:1); });
+  STOCKS.forEach(d => { const h = S.hold[d.id]; if (h && h.n > 0 && d.div > 0) tot += h.n*S.stocks[d.id].p*d.div*(sk('t7')?1.5:1)*(syn('wall')?1.25:1)*(hasAx('banco', 'mesa') ? 1.2 : 1); });
   if (tot > 0){ S.divs += tot; earn(tot, .05, 'dividendos'); log(`Dividendos cobrados: +${money(tot)}`, 'up'); }
 }
 function bizTick(){
   BIZ.forEach(b => { const st = S.biz[b.id]; if (st && st.boost && st.boost.left > 0) st.boost.left -= 1; });
   if (bizLvl('tec') && (tecTimer -= 1) <= 0){
-    tecTimer = 60; const old = S.tecF; S.tecF = rnd(.3, 2.3);
-    setTicker(`${S.tecF > old ? '▲' : '▼'} Tu tecnológica ${S.tecF > 1.5 ? 'triunfa con su nuevo producto' : S.tecF < .7 ? 'pasa una mala racha' : 'cambia de rumbo'}: rinde al ${nf0.format(S.tecF*100)} %`, S.tecF > old ? 'up' : 'down', '#bizTicker');
+    tecTimer = 60; S.tecF = rnd(hasAx('tec', 'datos') ? .8 : .3, 2.3);   // su rendimiento se ve en su cartel y en su ficha
   }
   if (bizCount() && (bizEvTimer -= 1) <= 0){
     bizEvTimer = rnd(80, 150);
-    const b = pick(BIZ.filter(b => bizLvl(b.id) > 0)), E = pick(BIZ_EV);
-    S.biz[b.id].boost = {mult:E.mult, left:E.left};
-    const txt = E.txt.replace('{n}', b.name.toLowerCase().startsWith('tec') ? 'tu tecnológica' : 'tu ' + b.name.toLowerCase());
-    setTicker((E.tone === 'up' ? '▲ ' : '▼ ') + txt[0].toUpperCase() + txt.slice(1), E.tone, '#bizTicker');
-    if (S.section !== 'empresas') toast(txt[0].toUpperCase() + txt.slice(1), E.tone);
+    const b = pick(BIZ.filter(b => bizLvl(b.id) > 0)), E = pick(BIZ_EV), who = b.name.toLowerCase().startsWith('tec') ? 'tu tecnológica' : 'tu ' + b.name.toLowerCase();
+    if (E.mult < 1 && hasAx(b.id, 'seguridad')){ const t = `La seguridad privada de ${who} evita una ${E.name.toLowerCase()}`; log(t, 'up'); toast(t, 'up'); return; }
+    const left = E.left*(E.mult > 1 && hasAx('tec', 'antena') ? 2 : 1);
+    S.biz[b.id].boost = {mult:E.mult, left, dur:left, name:E.name, tone:E.tone};
+    const txt = E.txt.replace('{n}', who).replace(`${E.left} s`, `${left} s`);
+    log(txt[0].toUpperCase() + txt.slice(1), E.tone);
+    toast(txt[0].toUpperCase() + txt.slice(1), E.tone);
   }
 }
 

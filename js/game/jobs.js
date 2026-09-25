@@ -3,7 +3,7 @@ import { money, niceRound, pfmt, pick, rnd, weight } from '../core/format.js';
 import { CLIENTS, JOB_KINDS, METALS, syn } from '../data/content.js';
 import { rec } from './economy.js';
 import { earn, log, silent } from './progress.js';
-import { S, cap, clickEq, gpsEq, metalConv, mk, setDone, sk, unl } from './state.js';
+import { S, cap, clickEq, gpsEq, jobTimeMult, metalConv, mk, setDone, sk, unl } from './state.js';
 
 /* ================= encargos =================
    Los clientes piden metal a cambio de una prima sobre el spot y un plazo (en horas del juego).
@@ -39,7 +39,7 @@ function makeOffer(){
   const C = pick(cands), m = pick(C.m.filter(x => S.opened[x])), kind = pickKind(C), J = JOB_KINDS[kind];
   const g = stepQty(m, J, 0); if (!(g > 0)) return;
   const prem = premFor(C, J), price = mk(m).price*(1 + prem);
-  const o = {id: S.uid++, cid: C.id, client: C.name, m, kind, g, price, prem, time: Math.round(rnd(...J.t)/5)*5, pen: 0.25*g*price, exp: 45};
+  const o = {id: S.uid++, cid: C.id, client: C.name, m, kind, g, price, prem, time: Math.round(rnd(...J.t)*jobTimeMult()/5)*5, pen: 0.25*g*price, exp: 45};
   if (J.steps){ o.step = 0; o.steps = J.steps; }
   S.offers.push(o); K.off = '';
   if (!silent) toast(`Nuevo encargo de ${C.name}: ${weight(g)} de ${METALS[m].low}${kind !== 'normal' ? ` (${J.name.toLowerCase().replace(/[¡!]/g, '')})` : ''}`);
@@ -85,7 +85,7 @@ export function deliver(id){
   if (c.steps && c.step < c.steps - 1){
     // la cadena sigue: el siguiente pedido es más grande y llega con plazo nuevo
     const paid = c.paid + rev, step = c.step + 1, g = stepQty(c.m, J, step), price = mk(c.m).price*(1 + c.prem);
-    S.contracts[i] = {...c, id: S.uid++, step, paid, g, price, pen: 0.25*g*price, left: Math.round(rnd(...J.t)/5)*5, ready: false};
+    S.contracts[i] = {...c, id: S.uid++, step, paid, g, price, pen: 0.25*g*price, left: Math.round(rnd(...J.t)*jobTimeMult()/5)*5, ready: false};
     msg += ` · cadena ${step}/${c.steps}`;
   } else {
     S.contracts.splice(i, 1);

@@ -1,6 +1,6 @@
 import { K, drawChart, selectDesk, sfx, toast, updateUI } from '../core/bus.js';
 import { $ } from '../core/dom.js';
-import { bizIpo, bizMgr, bizPause, bizUp } from '../game/biz.js';
+import { bizAnx, bizIpo, bizMgr, bizPause, bizUp } from '../game/biz.js';
 import { borrow, buyPlant, buyRes, buySolar, buyWind, payArrears, repair, repay, upRes } from '../game/economy.js';
 import { sellGems } from '../game/gems.js';
 import { acceptOffer, deliver, rejectOffer } from '../game/jobs.js';
@@ -38,6 +38,7 @@ document.addEventListener('click', e => {
     case 'bizMgr': bizMgr(id); break;
     case 'bizIpo': bizIpo(id); break;
     case 'bizPause': bizPause(id); break;
+    case 'bizAnx': bizAnx(id, +b.dataset.i); break;
     case 'stock': S.selStock = id; $('#sErr').hidden = true; updateUI(); break;
     case 'skill': learn(id); break;
     case 'respec1': K.respec = true; updateUI(); break;

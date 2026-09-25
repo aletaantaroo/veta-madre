@@ -2,9 +2,9 @@ import { K } from '../core/bus.js';
 import { $, esc, setT } from '../core/dom.js';
 import { clamp, fmtT, money, nf0, smoney } from '../core/format.js';
 import { CATS_IN, CATS_OUT, DAY_LEN, RES } from '../data/content.js';
-import { LOAN_RATE, capR, capRCost, estRates, gameMin, hhmm, isDay, loanLimit, mineCostMult, needs, openedMk, plantCost, plantOut, rPrice, rUnitFmt, repairCost, solarCost, solarOut, taxRate, util, windCost, windOut } from '../game/economy.js';
+import { capR, capRCost, estRates, gameMin, hhmm, isDay, loanLimit, loanRate, mineCostMult, needs, openedMk, plantCost, plantOut, rPrice, rUnitFmt, repairCost, solarCost, solarOut, taxRate, util, windCost, windOut } from '../game/economy.js';
 import { HEALTH_TXT, health, prodLoss } from '../game/health.js';
-import { S, fac, has, lvReq, maintF, unl } from '../game/state.js';
+import { S, fac, has, hasAx, lvReq, maintF, unl } from '../game/state.js';
 import { fitCanvas } from '../render/charts.js';
 import { paintIcons } from './icons.js';
 
@@ -80,7 +80,7 @@ export function updateFin(){
   setT($('#loanLocked'), `El banco te presta dinero a partir del nivel ${lvReq('loans')}.`);
   if (lOn){
     const lim = loanLimit(); $('#loanBar').style.width = clamp(S.debt/lim*100,0,100) + '%';
-    setT($('#loanInfo'), `Debes ${money(S.debt)} de un límite de ${money(lim)} (sube con tu nivel). Intereses: ${money(S.debt*LOAN_RATE)} por minuto. Lo que no puedas pagar de impuestos o gastos también se suma a la deuda.`);
+    setT($('#loanInfo'), `Debes ${money(S.debt)} de un límite de ${money(lim)} (sube con tu nivel). Intereses: ${money(S.debt*loanRate())} por minuto${hasAx('inmo', 'hipotecas') ? ' (−30 % por tus hipotecas propias)' : ''}. Lo que no puedas pagar de impuestos o gastos también se suma a la deuda.`);
     ['bor25','bor50','bor100'].forEach(id => $('#'+id).classList.toggle('cant', lim - S.debt < 1));
     ['rep50','rep100'].forEach(id => $('#'+id).classList.toggle('cant', !S.debt || S.money <= 0));
   }

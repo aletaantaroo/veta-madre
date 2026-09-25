@@ -173,25 +173,6 @@ p.locked::before{content:"";position:absolute;left:14px;top:50%;width:30px;heigh
 .res-card .info{font-size:13px}
 .acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 
-/* ---------- empresas ---------- */
-.biz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
-.card{position:relative;display:flex;flex-direction:column;gap:8px;padding:0 0 10px;background:#fff;border:2.5px solid var(--ink);border-radius:20px;box-shadow:0 5px 0 var(--line);overflow:hidden}
-.card-art{display:block;width:100%;height:112px;border-bottom:2.5px solid var(--ink);background:linear-gradient(180deg,#9fdcff,#d8f1ff)}
-.card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 12px}
-.card-head h3{font:400 19px var(--display)}
-.card .lvl{font:400 13px var(--display);padding:2px 9px;border-radius:9px;border:2px solid var(--ink);background:var(--paper-2);white-space:nowrap}
-.card>p{padding:0 12px;font:700 13px/1.4 var(--body);color:var(--ink-2)}
-.kv{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0;padding:0 12px}
-.kv div{padding:6px 9px;border-radius:12px;background:var(--paper-2)}
-.kv dt{font:900 10.5px var(--body);text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3)}
-.kv dd{margin:0;font:400 16px var(--display);font-variant-numeric:tabular-nums}
-.boost{padding:0 12px;font:800 13px var(--body)}
-.boost:empty{display:none}
-.card-actions{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px}
-.card.off{background:#f1e8d8}
-.card.off .card-art{filter:grayscale(.9) brightness(.8)}
-.card.off .card-head h3::before{content:"";display:inline-block;width:15px;height:15px;margin-right:6px;background:var(--ink);-webkit-mask:var(--lock) center/contain no-repeat;mask:var(--lock) center/contain no-repeat}
-
 /* ---------- bolsa ---------- */
 .bolsa-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;align-items:start}
 .st-list{display:flex;flex-direction:column;gap:7px;max-height:560px;overflow-y:auto;padding:2px 4px 6px 2px}
@@ -421,39 +402,6 @@ p.locked::before{content:"";position:absolute;left:14px;top:50%;width:30px;heigh
 .ov-sub{font:700 13px/1.35 var(--body)}
 @media (max-width: 640px){ .ov-card.wide{padding:10px} .ov-card.wide>b{font-size:19px} .bm{padding:6px 9px} .bm b{font-size:16px} .bm span{font-size:11.5px} }
 @media (max-width: 640px){ .ov-sub{display:none} }
-
-/* ---------- ciudad de empresas ---------- */
-.city-wrap{position:relative;margin-bottom:10px;border:3px solid var(--ink);border-radius:18px;overflow:hidden;box-shadow:0 5px 0 var(--ink);background:#79c6ff}
-.city-wrap canvas{display:block;width:100%;height:clamp(200px,34vh,300px);touch-action:manipulation}
-.city-hint{position:absolute;right:10px;top:8px;padding:2px 9px;border:2px solid var(--ink);border-radius:9px;background:rgba(255,245,222,.92);font:800 11.5px var(--body);color:var(--ink-2);pointer-events:none}
-.biz-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-.biz-tabs button{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:5px 11px;border:2.5px solid var(--ink);border-radius:13px;background:#fff;box-shadow:0 3px 0 var(--line);font:400 14px/1.1 var(--display);text-align:left}
-.biz-tabs button small{font:800 11px var(--body);color:var(--ink-3)}
-.biz-tabs button.locked{background:#eadfca;color:var(--ink-3)}
-.biz-tabs button.sale{background:#fff7dc}
-.biz-tabs button.can small{color:var(--up)}
-.biz-tabs button[aria-selected="true"]{background:var(--orange);color:#fff;text-shadow:var(--outline-sm);transform:translateY(-2px);box-shadow:0 5px 0 var(--orange-2),0 5px 0 2.5px var(--ink)}
-.biz-tabs button[aria-selected="true"] small{color:#fff5de}
-.biz-grid.one{grid-template-columns:minmax(0,1fr)}
-.biz-grid.one .card{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "p" "kv" "boost" "act";align-content:start;padding:0 14px 12px}
-.biz-grid.one .kv{grid-template-columns:repeat(2,minmax(0,220px))}
-.biz-grid.one .card[hidden]{display:none}
-.biz-grid.one .card-art{display:none}
-.biz-grid.one .card-head{grid-area:head;padding:12px 0 0}
-.biz-grid.one .card>p:not(.boost){grid-area:p;padding:0}
-.biz-grid.one .kv{grid-area:kv;padding:0}
-.biz-grid.one .boost{grid-area:boost;padding:0}
-.biz-grid.one .card-actions{grid-area:act;padding:0}
-@media (max-width: 640px){
-  .biz-grid.one .card{padding:0 12px 12px}
-  .biz-grid.one .kv{grid-template-columns:1fr 1fr}
-  .city-wrap{overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}
-  .city-wrap canvas{width:900px}
-  .city-hint{display:none}
-  .biz-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
-  .biz-tabs button{flex:0 0 auto}
-  .city-wrap canvas{height:190px}
-}
 
 /* ---------- árbol de habilidades (v12.1): pestañas, filas, elección y maestra ---------- */
 .c-orange{--bc:var(--orange);--bc2:var(--orange-2)} .c-blue{--bc:var(--blue);--bc2:var(--blue-2)} .c-purple{--bc:var(--purple);--bc2:var(--purple-2)} .c-green{--bc:var(--green);--bc2:var(--green-2)}

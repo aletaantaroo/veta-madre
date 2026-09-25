@@ -2,8 +2,8 @@ import { emit, toast, updateUI } from '../core/bus.js';
 import { clamp, gauss, money, nf0, nf2, nf3 } from '../core/format.js';
 import { BIZ, CREW, DAY_LEN, METALS, MK, RES, syn } from '../data/content.js';
 import { sell } from './market.js';
-import { earn, log, silent, xpMoney } from './progress.js';
-import { S, bizInc, bizMult, bizTotal, buff, cap, crewMult, fac, gps, gpsEq, has, jewelPrice, jewelRate, metalConv, mk, ownFrac, physPrice, prodMult, sk, unl } from './state.js';
+import { earn, log, refIncome, silent, xpMoney } from './progress.js';
+import { S, bizFixed, bizInc, bizTotal, buff, cap, crewMult, fac, gps, gpsEq, has, hasAx, jewelGold, jewelPrice, jewelRate, metalConv, mk, ownFrac, physPrice, prodMult, sk, unl } from './state.js';
 
 /* ================= operaciones: recursos, gastos, finanzas ================= */
 
@@ -19,9 +19,15 @@ export function whenTxt(sec){
   const m = gameMin() + toGameMin(sec), d = Math.floor(m/1440);
   return `${d === 0 ? 'hoy' : d === 1 ? 'mañana' : `el día ${(S.day || 0) + d}`} a las ${hhmm(m % 1440)}`;
 }
+/* Cámara acorazada del banco: cada día tu efectivo rinde un 1 %, como mucho un minuto de lo que ingresas. */
+function vaultInterest(){
+  if (!hasAx('banco', 'camara') || !(S.money > 0)) return;
+  const v = Math.min(S.money*.01, refIncome()*60); if (!(v > 0)) return;
+  earn(v, .02, 'empresas'); log(`La cámara acorazada del banco hace rendir tu efectivo: +${money(v)}`, 'up');
+}
 function advanceClock(dt){
   const mid = DAY_LEN/4, a = S.tarT, b = a + dt;
-  if ((a < mid && b >= mid) || (a < mid + DAY_LEN && b >= mid + DAY_LEN)){ S.day = (S.day || 0) + 1; if (!silent) emit('newDay', S.day); }
+  if ((a < mid && b >= mid) || (a < mid + DAY_LEN && b >= mid + DAY_LEN)){ S.day = (S.day || 0) + 1; vaultInterest(); if (!silent) emit('newDay', S.day); }
   S.tarT = b % DAY_LEN;
 }
 const ePrice = () => (isDay() && !sk('o9') ? .20 : .08)*Math.exp(S.px.ex);
@@ -47,10 +53,11 @@ export function needs(){
 }
 export const repairCost = () => (100 - S.maint)/100*needs().mv*0.03;
 export const loanLimit = () => Math.round(1000*Math.pow(1.55, S.level-1));
-export const LOAN_RATE = 0.005;
+const LOAN_RATE = 0.005;
+/* Interés por minuto de tu deuda (las hipotecas propias de la inmobiliaria lo bajan un 30 %). */
+export const loanRate = () => LOAN_RATE*(hasAx('inmo', 'hipotecas') ? .7 : 1);
 export const taxRate = () => has('u_asesor') ? .05 : .10;
-function bizFixed(b){ const st = S.biz[b.id]; if (!st || !st.lv) return 0; return 0.3*b.inc*st.lv*Math.pow(1.06,st.lv)*bizMult()*(st.mgr?2:1)*ownFrac(b); }
-const bizFixedTotal = () => BIZ.reduce((a,b)=>a+bizFixed(b),0);
+export const bizFixedTotal = () => BIZ.reduce((a,b)=>a+bizFixed(b),0);
 
 export function rec(cat, v){ S.fin.cur[cat] = (S.fin.cur[cat]||0) + v; if (unl('taxes') && cat !== 'impuestos') S.taxBase += v; }
 function spend(v, cat){ if (!(v > 0)) return; S.money -= v; rec(cat, -v); }
@@ -124,8 +131,8 @@ function econStep(dt){
   }
   BIZ.forEach(b => { const inc = bizInc(b)*dt; if (inc > 0) earn(inc, .03, 'empresas'); spendOrDebt(bizFixed(b)*dt, 'gastosEmp'); });
   const jr = jewelRate();
-  if (jr && S.stock.au > 0){ const used = Math.min(S.stock.au, jr*dt); S.stock.au -= used; earn(used*jewelPrice()*ownFrac(BIZ[0]), .03, 'empresas'); }
-  if (S.debt > 0) spendOrDebt(S.debt*LOAN_RATE/60*dt, 'intereses');
+  if (jr && S.stock.au > 0){ const need = jewelGold()*dt, used = Math.min(S.stock.au, need); S.stock.au -= used; earn(jr*dt*(used/need)*jewelPrice()*ownFrac(BIZ[0]), .03, 'empresas'); }
+  if (S.debt > 0) spendOrDebt(S.debt*loanRate()/60*dt, 'intereses');
   if (S.arrears <= 0) S.moral = Math.min(100, S.moral + dt/(sk('o1') ? 15 : 30));
   if (sk('o10') && S.moral < 60) S.moral = 60;
   if ((S.payT -= dt) <= 0){ S.payT += 60; payday(N.sal*60); }
@@ -156,7 +163,7 @@ export function estRates(){
   const N = {e:N0.e*cm*u, f:N0.f*cm*u, x:N0.x*cm*u, sal:N0.sal*cm*(0.2+0.8*u), mv:N0.mv};
   const inc = openedMk().reduce((a,m) => a + (S.stock[m] < cap(m) ? gps(m)*physPrice(m) : 0), 0) + bizTotal();
   const PO = plantsOn(), eGrid = Math.max(0, N.e*fac.e + PO.bio*60 + PO.fab*40 - solarOut() - windOut());
-  const exp = N.sal + eGrid*ePrice() + Math.max(0, N.f*fac.f - PO.bio*20)*fPrice() + Math.max(0, N.x*fac.x - PO.fab*4)*xPrice() + bizFixedTotal() + S.debt*LOAN_RATE/60
+  const exp = N.sal + eGrid*ePrice() + Math.max(0, N.f*fac.f - PO.bio*20)*fPrice() + Math.max(0, N.x*fac.x - PO.fab*4)*xPrice() + bizFixedTotal() + S.debt*loanRate()/60
     + (S.maintAuto && N.mv ? (1/12)*(has('u_taller')?.5:1)*(sk('o3')?.6:1)*(sk('o10')?0:1)*u/100*N.mv*.03*1.2 : 0);
   return {inc, exp, net: inc - exp};
 }

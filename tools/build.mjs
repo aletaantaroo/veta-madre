@@ -3,7 +3,7 @@ import fs from 'fs';
 import * as esbuild from 'esbuild';
 const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const js = await esbuild.build({entryPoints: [ROOT + '/js/main.js'], bundle: true, format: 'iife', minify: true, write: false, target: 'es2020', legalComments: 'none'});
-const cssSrc = ['base', 'hud', 'windows', 'overlays', 'descenso'].map(n => fs.readFileSync(`${ROOT}/css/${n}.css`, 'utf8')).join('\n');
+const cssSrc = ['base', 'hud', 'windows', 'overlays', 'descenso', 'city'].map(n => fs.readFileSync(`${ROOT}/css/${n}.css`, 'utf8')).join('\n');
 const css = (await esbuild.transform(cssSrc, {loader: 'css', minify: true})).code;
 const html = fs.readFileSync(ROOT + '/index.html', 'utf8');
 const body = html.split('<!--APP-START-->')[1].split('<!--APP-END-->')[0].replace(/\n\s+/g, '\n');

@@ -5,7 +5,7 @@ import { METALS, MK } from '../data/content.js';
 import { estRates, gameMin, hhmm, isDay } from '../game/economy.js';
 import { health } from '../game/health.js';
 import { dig } from '../game/mining.js';
-import { S, cap, findCount, legAvail, lvReq, posPnl, unl, xpNeed } from '../game/state.js';
+import { LEG_BONUS, S, cap, findCount, legAvail, lvReq, posPnl, unl, xpNeed } from '../game/state.js';
 import { resizeChart } from '../render/charts.js';
 import { updateAch } from './achievements.js';
 import { updateBiz } from './biz.js';
@@ -103,7 +103,7 @@ function renderUI(){
   const gm = gameMin(), day = isDay(); setT($('#kClock'), hhmm(gm)); setT($('#kDay'), `Día ${S.day || 0}`);
   const ci = $('#kClockIco'); if (ci.dataset.icon !== (day ? 'sun' : 'moon')){ ci.dataset.icon = day ? 'sun' : 'moon'; ci.innerHTML = icon(ci.dataset.icon); $('#pillClock').classList.toggle('night', !day); }
   $('#pillClock').title = `Día ${S.day || 0}, ${hhmm(gm)} · ${day ? 'de día: tarifa punta de la luz hasta las 18:00' : 'de noche: tarifa valle hasta las 06:00 y salen los hallazgos nocturnos'} · un día dura 6 minutos`;
-  const lc = $('#legacyChip'); lc.hidden = !S.legacy; setT(lc, `Legado ${S.legacy} · +${legAvail()*5} %`);
+  const lc = $('#legacyChip'); lc.hidden = !S.legacy; setT(lc, `Legado ${S.legacy} · +${nf0.format(legAvail()*LEG_BONUS*100)} %`);
   const H = health(), bf = $('#bNavFin'); bf.hidden = !H.lv || !secOpen('finanzas'); bf.classList.toggle('bad', H.lv > 1);
   const newF = findCount() - (S.museoSeen || 0), bmu = $('#bNavMu'); bmu.hidden = newF <= 0 || S.section === 'museo'; setT(bmu, String(newF));
   const bg = $('#bNavMg'), tk = S.mg && S.mg.pass ? (S.mg.pass.cart || 0) + (S.mg.pass.blast || 0) : 0; bg.hidden = !tk || !secOpen('minijuegos') || S.section === 'minijuegos'; setT(bg, String(tk));

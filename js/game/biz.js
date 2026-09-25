@@ -1,10 +1,10 @@
-import { K, toast, updateUI } from '../core/bus.js';
+import { K, emit, sfx, toast, updateUI } from '../core/bus.js';
 import { $ } from '../core/dom.js';
 import { money, nf0, smoney } from '../core/format.js';
-import { BIZ, NSLOTS } from '../data/content.js';
+import { BIZ, DISTRICTS, NSLOTS, ROMAN } from '../data/content.js';
 import { rec } from './economy.js';
 import { earn, log, xpMoney } from './progress.js';
-import { S, allStocks, bizCost, bizFull, mgrCost, sk, stComm, unl } from './state.js';
+import { S, allStocks, axCost, bizCost, bizFull, mgrCost, sk, stComm, stageOf, unl } from './state.js';
 
 /* ---- empresas ---- */
 export function bizUp(id){
@@ -13,8 +13,25 @@ export function bizUp(id){
   if (st.lv >= 30) return;
   const c = bizCost(b); if (S.money < c) return;
   S.money -= c; st.lv++;
-  toast(st.lv === 1 ? `Abres ${b.name.toLowerCase()}` : `${b.name} sube a nivel ${st.lv}`, 'up');
-  log(st.lv === 1 ? `Empresa nueva: ${b.name} (−${money(c)})` : `${b.name} a nivel ${st.lv} (−${money(c)})`);
+  const s0 = stageOf(st.lv - 1), s1 = stageOf(st.lv);
+  if (st.lv === 1){ toast(`Abres ${b.name.toLowerCase()} en ${DISTRICTS[b.district].en}`, 'up', 'imp'); }
+  else if (s1 > s0){ toast(`¡${b.name} pasa a la etapa ${ROMAN[s1]}: ${b.stages[s1 - 1]}! +25 % de ingresos${s1 <= 4 ? ' y un anexo nuevo' : ''}`, 'lv', 'imp'); sfx('ach'); emit('bizStage', id); }
+  else toast(`${b.name} sube a nivel ${st.lv}`, 'up');
+  log(st.lv === 1 ? `Empresa nueva: ${b.name} (−${money(c)})` : `${b.name} a nivel ${st.lv}${s1 > s0 ? ` · etapa ${ROMAN[s1]}` : ''} (−${money(c)})`);
+  emit('bizUp', id);
+  xpMoney(c, .05); K.biz = ''; updateUI();
+}
+/* Construir un anexo: se abre con la etapa II, III o IV y se paga una sola vez. */
+export function bizAnx(id, i){
+  const b = BIZ.find(x=>x.id===id), st = S.biz[id], A = b && b.anexos[i]; if (!A || !st || !st.lv) return;
+  st.ax ||= {}; if (st.ax[A.id] || stageOf(st.lv) < i + 2) return;
+  const c = axCost(b, i); if (S.money < c) return;
+  S.money -= c; st.ax[A.id] = 1;
+  if (A.id === 'idi'){ S.sp = (S.sp || 0) + 1; K.nav = ''; }
+  if (A.id === 'datos') S.tecF = Math.max(.8, S.tecF);
+  toast(`${A.name} construido en ${b.name.toLowerCase()}: ${A.fx.charAt(0).toLowerCase() + A.fx.slice(1)}`, 'up', 'imp');
+  log(`Anexo ${A.name} en ${b.name} (−${money(c)})`);
+  sfx('buy'); emit('bizUp', id);
   xpMoney(c, .05); K.biz = ''; updateUI();
 }
 export function bizMgr(id){

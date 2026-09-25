@@ -59,7 +59,7 @@ function loop(now){
   const el = Math.max(0, (now - last)/1000); last = now;
   if (el > 5) catchUp(el, el > 60); else step(el);
   const dt = Math.min(el, .05);
-  render(now/1000, dt);
+  if (S.section !== 'empresas') render(now/1000, dt);   // con la ciudad abierta la mina no se ve: no se dibuja
   fxFrame(dt); hudMoney(dt);
   if ((uiAcc += el) > .25){ uiAcc = 0; updateUI(); }
   requestAnimationFrame(loop);
