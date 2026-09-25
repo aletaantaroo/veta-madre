@@ -9,7 +9,13 @@ import { S } from '../game/state.js';
 const box = $('#toasts'), MAX = 2, HIST = 60;
 let feedOpen = false;
 
-function isImportant(msg, tone){ return tone === 'lv' || tone === 'down' || tone === 'ach' || /^(Logro|¡|Tiempo|Huelga|Desbloqueado)/.test(msg); }
+/* Cuatro clases de aviso (el tercer parámetro de toast):
+   imp  · importante: sale en pantalla, suena y enciende la campana.
+   ok   · respuesta a algo que acabas de hacer (guardar, cargar, abrir una mina): sale en pantalla.
+   err  · por qué no ha pasado lo que pedías: sale siempre y no se guarda.
+   info · el día a día (noticias, ventas, compras, encargos nuevos): solo queda en la campana, salvo con «Todos».
+   Sin clase: los tonos de logro y de nivel cuentan como importantes; el resto, como día a día. */
+const levelOf = (tone, lvl) => lvl || (tone === 'ach' || tone === 'lv' ? 'imp' : 'info');
 function ago(t){
   const s = Math.max(0, (Date.now() - t)/1000);
   if (s < 50) return 'ahora'; if (s < 3600) return `hace ${Math.round(s/60)} min`;
@@ -43,16 +49,16 @@ function pop(msg, tone, imp){
 }
 function out(el){ el.classList.add('out'); setTimeout(() => el.remove(), 320); }
 
-function showToast(msg, tone){
+function showToast(msg, tone, lvl){
   if (silent) return;
-  const lvl = /^¡Nivel \d/.test(msg), imp = isImportant(msg, tone);
+  const L = levelOf(tone, lvl), imp = L === 'imp', lvlUp = /^¡Nivel \d/.test(msg);
   if (tone === 'ach') sfx('ach');
-  else if (tone === 'lv' && !lvl) sfx('ach');
-  else if (tone === 'down' && imp) sfx('bad');
-  remember(msg, tone, imp);
-  if (lvl) return;
-  if (SET.toasts === 'none' || (SET.toasts === 'imp' && !imp)) return;
-  pop(msg, tone, imp);
+  else if (imp && tone === 'lv' && !lvlUp) sfx('ach');
+  else if (imp && tone === 'down') sfx('bad');
+  if (L !== 'err') remember(msg, tone, imp);
+  if (lvlUp) return;
+  const show = SET.toasts === 'all' || (SET.toasts === 'imp' ? L !== 'info' : L === 'err');
+  if (show) pop(msg, tone, imp);
 }
 on('toast', showToast);
 

@@ -80,7 +80,7 @@ function payday(total){
   if (S.arrears > 0.01){
     S.unpaid = true; S.moral = Math.max(sk('o10') ? 60 : 0, S.moral - (sk('o1') ? 12 : 25));
     const msg = S.moral <= 0 ? `Huelga: la plantilla trabaja al mínimo hasta que pagues ${money(S.arrears)} de atrasos` : `No llegas a pagar las nóminas: debes ${money(S.arrears)} y la moral baja al ${nf0.format(S.moral)} %`;
-    toast(msg, 'down'); log(msg, 'down');
+    toast(msg, 'down', 'imp'); log(msg, 'down');
   } else { S.arrears = 0; if (total > 0) S.moral = Math.min(100, S.moral + (has('u_comedor') ? 25 : 10)); }
 }
 export const openedMk = () => MK.filter(m => S.opened[m]);
@@ -160,7 +160,7 @@ export function estRates(){
 }
 export function buyRes(k){
   const room = capR(k) - S.res[k], p = rPrice(k), b = Math.min(room, Math.max(0,S.money)/p);
-  if (b < 1){ toast(room < 1 ? `Tu ${RES[k].store} ya está lleno.` : 'No tienes caja para comprar.'); return; }
+  if (b < 1){ toast(room < 1 ? `Tu ${RES[k].store} ya está lleno.` : 'No tienes caja para comprar.', '', 'err'); return; }
   S.res[k] += b; spend(b*p, RES[k].cat);
   toast(`Compras ${nf0.format(b)} ${RES[k].unit} de ${RES[k].name.toLowerCase()} por ${money(b*p)}`); updateUI();
 }
@@ -170,20 +170,20 @@ export function buyPlant(k){ const c = plantCost(k); if (S.money < c) return; S.
 export function buySolar(){ const c = solarCost(); if (S.money < c) return; S.money -= c; xpMoney(c, .05); S.solar++; toast(`Panel solar instalado (${S.solar}). De día genera ${nf0.format(S.solar*100)} kWh/s.`, 'up'); log(`Panel solar nº ${S.solar} (−${money(c)})`); updateUI(); }
 export function repair(){
   const c = repairCost(); if (c <= 0.01) return;
-  if (S.money < c){ toast(`Reparar cuesta ${money(c)}.`); return; }
+  if (S.money < c){ toast(`Reparar cuesta ${money(c)}.`, '', 'err'); return; }
   if (S.maint < 30) S.flags.a_fix = true;
   spend(c, 'mantenimiento'); S.maint = 100; toast('Maquinaria reparada al 100 %', 'up'); log(`Reparas la maquinaria (−${money(c)})`); updateUI();
 }
 export function payArrears(){
   const p = Math.min(S.arrears, Math.max(0, S.money)); if (p <= 0) return;
   S.money -= p; rec('nominas', -p); S.arrears -= p;
-  if (S.arrears < .01){ S.arrears = 0; S.moral = Math.max(S.moral, 40); toast('Atrasos pagados: la plantilla vuelve al trabajo', 'up'); log('Pagas los atrasos de nóminas', 'up'); }
+  if (S.arrears < .01){ S.arrears = 0; S.moral = Math.max(S.moral, 40); toast('Atrasos pagados: la plantilla vuelve al trabajo', 'up', 'ok'); log('Pagas los atrasos de nóminas', 'up'); }
   updateUI();
 }
 export function borrow(frac){
   if (!unl('loans')) return;
   const a = Math.floor(Math.max(0, loanLimit() - S.debt)*frac);
-  if (a < 1){ toast('Has llegado a tu límite de crédito.'); return; }
+  if (a < 1){ toast('Has llegado a tu límite de crédito.', '', 'err'); return; }
   S.debt += a; S.money += a; S.borrowed = true;
   log(`Pides un préstamo de ${money(a)}`); toast(`Préstamo concedido: +${money(a)}`); updateUI();
 }

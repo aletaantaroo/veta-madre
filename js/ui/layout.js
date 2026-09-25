@@ -36,7 +36,7 @@ function openSection(k){
   if (!SECTIONS.includes(k)) k = 'mina';
   if (S && !secOpen(k)){
     const key = SEC_KEY[k];
-    toast(key ? `${secName(k)} se desbloquea en el nivel ${lvReq(key)}. Sube de nivel vendiendo, cumpliendo objetivos y descubriendo hallazgos.` : 'Aún no tienes hallazgos. Baja por la mina y busca lo que brilla.');
+    toast(key ? `${secName(k)} se desbloquea en el nivel ${lvReq(key)}. Sube de nivel vendiendo, cumpliendo objetivos y descubriendo hallazgos.` : 'Aún no tienes hallazgos. Baja por la mina y busca lo que brilla.', '', 'err');
     const b = $(`#nav button[data-sec="${k}"]`); if (b){ b.classList.remove('nope'); void b.offsetWidth; b.classList.add('nope'); }
     sfx('bad'); return;
   }

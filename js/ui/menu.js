@@ -106,12 +106,12 @@ export async function exportFile(){
   const name = `veta-madre_nivel-${S.level}_${stamp()}.json`, data = JSON.stringify(S);
   const dl = await dlCapability();
   if (dl){
-    try { await dl.save({filename: name, data}); toast('Partida descargada. Guárdala donde quieras y cárgala desde aquí cuando la necesites.', 'up'); }
+    try { await dl.save({filename: name, data}); toast('Partida descargada. Guárdala donde quieras y cárgala desde aquí cuando la necesites.', 'up', 'ok'); }
     catch(e){
       const c = e && e.code;
       if (c === 'declined') return;
-      if (c === 'rate_limited') toast('Ya hay una descarga esperando tu respuesta.');
-      else toast('Aquí no se pueden descargar archivos. Usa el código de texto de abajo.', 'down');
+      if (c === 'rate_limited') toast('Ya hay una descarga esperando tu respuesta.', '', 'err');
+      else toast('Aquí no se pueden descargar archivos. Usa el código de texto de abajo.', 'down', 'err');
     }
     return;
   }
@@ -119,17 +119,17 @@ export async function exportFile(){
     const blob = new Blob([data], {type: 'application/json'}), url = URL.createObjectURL(blob), a = document.createElement('a');
     a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
-    toast('Partida descargada. Guárdala donde quieras y cárgala desde aquí cuando la necesites.', 'up');
-  } catch(e){ toast('Este navegador no deja descargar archivos. Usa el código de texto.', 'down'); }
+    toast('Partida descargada. Guárdala donde quieras y cárgala desde aquí cuando la necesites.', 'up', 'ok');
+  } catch(e){ toast('Este navegador no deja descargar archivos. Usa el código de texto.', 'down', 'err'); }
 }
 export function exportSave(){
   save();
   let code = '';
   try { code = btoa(unescape(encodeURIComponent(JSON.stringify(S)))); } catch(e){ return; }
   const ta = $('#saveCode'); ta.value = code;
-  const done = () => toast('Código copiado. Guárdalo donde quieras.');
-  try { navigator.clipboard.writeText(code).then(done, () => { ta.select(); toast('Selecciona el código y cópialo (Ctrl+C).'); }); }
-  catch(e){ ta.select(); toast('Selecciona el código y cópialo (Ctrl+C).'); }
+  const done = () => toast('Código copiado. Guárdalo donde quieras.', '', 'ok');
+  try { navigator.clipboard.writeText(code).then(done, () => { ta.select(); toast('Selecciona el código y cópialo (Ctrl+C).', '', 'err'); }); }
+  catch(e){ ta.select(); toast('Selecciona el código y cópialo (Ctrl+C).', '', 'err'); }
 }
 function askLoad(d, from){
   const err = $('#importErr');
@@ -152,7 +152,7 @@ export function doImport(){
   backup('prev', true);
   const d = pending.d; pending = null;
   setS(migrate(d)); emit('sceneReset'); resetKeys(); syncLamps(); save();
-  renderImport(); closeMenu(); showSection(S.section || 'mina'); toast('Partida cargada.', 'lv');
+  renderImport(); closeMenu(); showSection(S.section || 'mina'); toast('Partida cargada.', 'lv', 'ok');
 }
 $('#importFile').addEventListener('change', e => {
   const f = e.target.files && e.target.files[0]; if (!f) return;

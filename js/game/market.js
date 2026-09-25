@@ -167,7 +167,7 @@ function bizTick(){
 /* ---- venta física ---- */
 export function sell(m, frac, auto){
   const keep = Math.min(S.stock[m], reserved(m)), amt = (S.stock[m] - keep)*frac;
-  if (!(amt > 0) || amt*mk(m).price < 0.005){ if (!auto) toast(keep > 0 ? `Todo tu ${METALS[m].low} está apartado para encargos: entrégalos desde la mina.` : `No tienes ${METALS[m].low} que vender.`); return 0; }
+  if (!(amt > 0) || amt*mk(m).price < 0.005){ if (!auto) toast(keep > 0 ? `Todo tu ${METALS[m].low} está apartado para encargos: entrégalos desde la mina.` : `No tienes ${METALS[m].low} que vender.`, '', 'err'); return 0; }
   const s = mk(m), imp = impactOf(m, amt), fill = s.price*(1 - imp/2)*(1 - fee())*(1 + refineBonus())*saleBonus();
   const rev = amt*fill;
   S.stock[m] = frac >= 1 ? keep : S.stock[m] - amt; S.sold += amt*METALS[m].p0/80;
@@ -222,7 +222,7 @@ export function closePos(p, reason){
   S.pnlReal += pnl;
   const label = {liq:'Liquidada', sl:'Stop loss', tp:'Take profit'}[reason] || 'Cerrada';
   const msg = `${label}: ${p.dir>0?'largo':'corto'} de ${weight(p.g)} de ${METALS[p.m].low} · ${smoney(pnl)}`;
-  log(msg, pnl >= 0 ? 'up' : 'down'); toast(msg, pnl >= 0 ? 'up' : 'down');
+  log(msg, pnl >= 0 ? 'up' : 'down'); toast(msg, pnl >= 0 ? 'up' : 'down', reason ? 'imp' : 'info');
   K.pos = ''; drawChart();
 }
 function processPositions(){
@@ -254,7 +254,7 @@ function processOrders(){
     if (o.kind === 'above' ? now >= o.target : now <= o.target){
       S.orders.splice(S.orders.indexOf(o),1); K.ord = '';
       const rev = sell(o.m, o.frac, 'Orden ejecutada');
-      if (rev) toast(`Orden ejecutada: ${METALS[o.m].low} a ${pfmt(o.m, now)} · +${money(rev)}`, 'up');
+      if (rev) toast(`Orden ejecutada: ${METALS[o.m].low} a ${pfmt(o.m, now)} · +${money(rev)}`, 'up', 'imp');
       else log(`Orden de ${METALS[o.m].low} a ${pfmt(o.m, o.target)} ejecutada con el almacén vacío`);
     }
   }

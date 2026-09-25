@@ -81,6 +81,27 @@
           <div class="mine-jobs" id="mineJobs" hidden><div class="mj-head"><b>Encargos</b><button type="button" class="linkish" data-go="mercado" data-desk-go="con">ver tablón</button></div><div id="mineJobList"></div></div>
         </div>
       </div>
+      <div class="prod fin-mini" id="finCard" hidden>
+        <button type="button" class="prod-head" id="finHead" aria-expanded="true" aria-controls="finBody">
+          <span class="prod-k">Beneficio</span>
+          <b class="prod-v" id="finNet">0 €/s</b>
+          <span class="health" id="finPill" data-h="0"><i></i><span id="finPillTxt">Cuentas sanas</span></span>
+          <span class="prod-caret" aria-hidden="true"></span>
+        </button>
+        <div class="prod-body" id="finBody">
+          <div class="fm-rows">
+            <div class="fm-row"><span class="fm-k">Ingresos</span><span class="fm-bar"><i id="fmIncBar"></i></span><b class="fm-v t-up" id="fmInc">—</b></div>
+            <div class="fm-row exp"><span class="fm-k">Gastos</span><span class="fm-bar"><i id="fmExpBar"></i></span><b class="fm-v t-down" id="fmExp">—</b></div>
+          </div>
+          <div class="fm-grid">
+            <div><small id="fmPayK">Nómina</small><b id="fmPay">—</b></div>
+            <div><small>Deuda</small><b id="fmDebt">—</b></div>
+            <div><small>Moral</small><b id="fmMoral">—</b></div>
+          </div>
+          <ul class="prod-issues" id="finIssues" hidden></ul>
+          <button type="button" class="linkish fm-go" data-go="finanzas">Ver las cuentas completas</button>
+        </div>
+      </div>
     </div>
 
     <div class="dig-dock" id="digDock">
@@ -242,12 +263,13 @@
   <!-- ================= MERCADO ================= -->
   <section class="sec win-wrap" id="sec-mercado" hidden>
     <div class="win win-blue">
-      <header class="win-head"><span class="win-ico" data-icon="chart"></span><h2>Mercado de metales</h2><button type="button" class="win-x" data-go="mina" aria-label="Cerrar">×</button></header>
-      <div class="win-body">
-        <div class="toolbar">
+      <header class="win-head"><span class="win-ico" data-icon="chart"></span><h2>Mercado de metales</h2>
+        <div class="toolbar head-tools">
           <div class="seg metal" id="mktSeg" aria-label="Metal"></div>
           <span class="pill-tag" id="regime" hidden>—</span>
         </div>
+        <button type="button" class="win-x" data-go="mina" aria-label="Cerrar">×</button></header>
+      <div class="win-body">
         <div class="mk-grid">
           <div class="mk-chart">
             <div class="monitor">
@@ -611,7 +633,7 @@
           <div class="seg chunky" id="setMotion"><button type="button" data-v="full">Completas</button><button type="button" data-v="calm">Reducidas</button></div></div>
         <div class="opt c-green"><span class="opt-ico" data-icon="book"></span><div class="opt-txt"><b>Tutoriales</b><span>El capataz te explica cada cosa nueva. <button type="button" class="linkish" data-act="tutReset" id="btnTutReset">Volver a verlos</button></span></div>
           <button type="button" class="switch" id="setTuts" data-k="tuts" role="switch" aria-checked="true" aria-label="Tutoriales"><i></i></button></div>
-        <div class="opt c-gold"><span class="opt-ico" data-icon="bell"></span><div class="opt-txt"><b>Avisos en pantalla</b><span>Todos quedan en la campana; aquí eliges cuáles aparecen al vuelo.</span></div>
+        <div class="opt c-gold"><span class="opt-ico" data-icon="bell"></span><div class="opt-txt"><b>Avisos en pantalla</b><span>Por defecto solo salen los importantes. Los demás se quedan guardados en la campana.</span></div>
           <div class="seg chunky" id="setToasts"><button type="button" data-v="all">Todos</button><button type="button" data-v="imp">Importantes</button><button type="button" data-v="none">Ninguno</button></div></div>
       </div>
     </div>

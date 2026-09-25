@@ -48,7 +48,7 @@ export function contractsTick(){
   if (unl('contracts') && S.offers.length < 3 && (offerTimer -= 1) <= 0){ makeOffer(); offerTimer = rnd(35, 75)*(sk('t3') ? .6 : 1); }
   for (const o of S.offers.slice()) if ((o.exp -= 1) <= 0){ S.offers.splice(S.offers.indexOf(o), 1); K.off = ''; }
   for (const c of S.contracts.slice()){
-    if (!c.ready && S.stock[c.m] >= c.g){ c.ready = true; if (!silent) toast(`Ya tienes el metal para ${c.client}: entrégalo desde la mina`, 'up'); K.jobs = ''; }
+    if (!c.ready && S.stock[c.m] >= c.g){ c.ready = true; if (!silent) toast(`Ya tienes el metal para ${c.client}: entrégalo desde la mina`, 'up', 'imp'); K.jobs = ''; }
     if (c.ready && S.stock[c.m] < c.g) c.ready = false;
     if ((c.left -= 1) <= 0) failJob(c);
   }
@@ -59,11 +59,11 @@ function failJob(c){
   S.rep = Math.max(0, S.rep - 1); S.conFail++;
   if (c.cid){ const R = cliRec(c.cid); R.fail++; R.n = Math.max(0, R.n - 2); }
   const msg = `Encargo incumplido con ${c.client}: penalización de ${money(pen)}${c.steps ? ' y se rompe la cadena' : ''}`;
-  log(msg, 'down'); toast(msg, 'down');
+  log(msg, 'down'); toast(msg, 'down', 'imp');
 }
 export function acceptOffer(id){
   const o = S.offers.find(x => x.id === id); if (!o) return;
-  if (S.contracts.length >= maxJobs()){ toast(`Tienes ${maxJobs()} encargos en curso. Entrega alguno antes de aceptar más.`); return; }
+  if (S.contracts.length >= maxJobs()){ toast(`Tienes ${maxJobs()} encargos en curso. Entrega alguno antes de aceptar más.`, '', 'err'); return; }
   S.offers.splice(S.offers.indexOf(o), 1);
   S.contracts.push({id: o.id, cid: o.cid, m: o.m, client: o.client, kind: o.kind || 'normal', g: o.g, price: o.price, prem: o.prem, pen: o.pen, left: o.time, time: o.time, step: o.step, steps: o.steps, paid: 0});
   log(`Aceptas entregar ${weight(o.g)} de ${METALS[o.m].low} a ${o.client} a ${pfmt(o.m, o.price)}`);
@@ -74,7 +74,7 @@ export function rejectOffer(id){ const i = S.offers.findIndex(x => x.id === id);
 export const chainBonus = c => (c.paid + c.g*c.price)*JOB_KINDS.cadena.bonus;
 export function deliver(id){
   const c = S.contracts.find(x => x.id === id); if (!c) return;
-  if (S.stock[c.m] < c.g){ toast(`Te faltan ${weight(c.g - S.stock[c.m])} de ${METALS[c.m].low} para ${c.client}.`); return; }
+  if (S.stock[c.m] < c.g){ toast(`Te faltan ${weight(c.g - S.stock[c.m])} de ${METALS[c.m].low} para ${c.client}.`, '', 'err'); return; }
   const J = jobKind(c);
   S.stock[c.m] -= c.g; S.sold += c.g*METALS[c.m].p0/80;
   const rev = c.g*c.price; earn(rev, J.xp, 'contratos');
@@ -98,7 +98,7 @@ export function deliver(id){
   if (c.cid){
     const before = trustLv(c.cid); cliRec(c.cid).n += sk('t8') ? 2 : 1;
     const after = trustLv(c.cid);
-    if (after > before) toast(`${c.client} ya te considera «${TRUST[after]}»: mejores precios${after === 1 ? ' y pedidos en cadena' : ''}`, 'lv');
+    if (after > before) toast(`${c.client} ya te considera «${TRUST[after]}»: mejores precios${after === 1 ? ' y pedidos en cadena' : ''}`, 'lv', 'info');
   }
   K.con = K.jobs = '';
   log(msg, 'up'); toast(msg, 'up'); bump('#pillMoney'); sfx('sell'); emit('sold', c.m, rev, false); updateUI();

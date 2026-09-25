@@ -1,7 +1,8 @@
 import { K, emit, on, sfx, updateUI } from '../core/bus.js';
 import { $, $$, esc, setT } from '../core/dom.js';
-import { money, nf0, pfmt, weight } from '../core/format.js';
+import { fmtT, money, nf0, pfmt, weight } from '../core/format.js';
 import { CREW, METALS, MK, OBJ, UP } from '../data/content.js';
+import { estRates } from '../game/economy.js';
 import { HEALTH_TXT, efficiency, health, prodValue } from '../game/health.js';
 import { reserved } from '../game/jobs.js';
 import { dig, fullFlash } from '../game/mining.js';
@@ -15,16 +16,18 @@ import { secOpen } from './layout.js';
 /* ---------- panel de producción: cuánto sacas, de qué, dónde picas y si algo va mal ---------- */
 let prodOpen = innerWidth > 860, issuesOpen = false;
 function setProdOpen(v){ prodOpen = v; $('#prodCard').classList.toggle('open', v); $('#prodHead').setAttribute('aria-expanded', String(v)); emit('layout'); }
-$('#prodHead').addEventListener('click', () => { sfx('ui'); if (!prodOpen) setProdOpen(true); else if (health().lv && !issuesOpen){ issuesOpen = true; K.prod = ''; updateMine(); } else { issuesOpen = false; setProdOpen(innerWidth > 860 ? true : false); K.prod = ''; updateMine(); } });
+$('#prodHead').addEventListener('click', () => { sfx('ui'); if (!prodOpen) setProdOpen(true); else if (prodHealth().lv && !issuesOpen){ issuesOpen = true; K.prod = ''; updateMine(); } else { issuesOpen = false; setProdOpen(innerWidth > 860 ? true : false); K.prod = ''; updateMine(); } });
 on('vaultTap', () => { setProdOpen(true); const b = $('#vaultRow'); b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash'); });
+/* Una fila por mineral: cuánto sacas por segundo, cuánto vale eso y cuándo se llena su almacén. */
 function prodRows(){
   const ms = MK.filter(m => S.opened[m]), next = MK.find(m => !S.opened[m]);
   const rows = ms.map(m => {
-    const M = METALS[m], f = Math.min(1, S.stock[m]/cap(m)), full = f >= 1, on = m === S.vein;
-    return `<button type="button" class="pr-row${on ? ' on' : ''}${full ? ' full' : ''}" data-act="vein" data-m="${m}" id="pr_${m}" title="${on ? 'Aquí picas tú' : 'Toca para picar aquí'} · ${weight(S.stock[m])} de ${weight(cap(m))} · ${pfmt(m, mk(m).price)}">
-      <span class="pr-dot"></span><span class="pr-name">${M.name}${on ? '<i class="pr-you" aria-label="picas aquí"></i>' : ''}</span>
-      <span class="pr-rate">${full ? 'parada' : `${weight(gps(m))}/s`}</span>
-      <span class="pr-bar"><i style="width:${(f*100).toFixed(1)}%"></i></span><span class="pr-pct">${full ? 'lleno' : nf0.format(f*100) + ' %'}</span></button>`;
+    const M = METALS[m], on = m === S.vein;
+    return `<button type="button" class="pr-row${on ? ' on' : ''}" data-act="vein" data-m="${m}" id="pr_${m}">
+      <span class="pr-dot"></span>
+      <span class="pr-main"><span class="pr-name">${M.name}${on ? '<i class="pr-you" aria-label="picas aquí"></i>' : ''}</span><span class="pr-sub"></span></span>
+      <span class="pr-rate"><b class="pr-v"></b><small>/s</small></span>
+      <span class="pr-fill"><span class="pr-bar"><i></i></span><span class="pr-pct"></span></span></button>`;
   });
   if (next){
     const M = METALS[next], ok = unl(next), can = ok && S.money >= M.open;
@@ -33,10 +36,54 @@ function prodRows(){
   }
   return rows.join('');
 }
+/* Los números cambian cada segundo: se tocan solo los textos para no rehacer los botones mientras los pulsas. */
+function fillProdRows(){
+  MK.forEach(m => {
+    const row = $('#pr_' + m); if (!row || !S.opened[m]) return;
+    const st = S.stock[m], c = cap(m), f = Math.min(1, st/c), full = f >= 1, g = gps(m), left = g > 0 ? (c - st)/g : Infinity;
+    row.classList.toggle('full', full);
+    setT(row.querySelector('.pr-v'), full || !(g > 0) ? '0 g' : `+${weight(g)}`);
+    setT(row.querySelector('.pr-sub'), full ? 'Parada: almacén lleno' : g > 0 ? `≈ ${money(g*physPrice(m))}/s` : 'Sin equipo');
+    row.querySelector('.pr-bar i').style.width = (f*100).toFixed(1) + '%';
+    setT(row.querySelector('.pr-pct'), full ? 'lleno' : left < 3600 ? `lleno en ${fmtT(left)}` : `${nf0.format(f*100)} %`);
+    row.title = `${m === S.vein ? 'Aquí picas tú' : 'Toca para picar aquí'} · ${weight(st)} de ${weight(c)} · ${pfmt(m, mk(m).price)}`;
+  });
+}
+/* ---------- finanzas justo debajo de la producción ---------- */
+const FIN_KEYS = ['arrears', 'pay', 'loss'];
+let finOpen = innerWidth > 860 && innerHeight >= 800, finIssuesOpen = false;
+function setFinOpen(v){ finOpen = v; $('#finCard').classList.toggle('open', v); $('#finHead').setAttribute('aria-expanded', String(v)); emit('layout'); }
+$('#finHead').addEventListener('click', () => { sfx('ui'); if (!finOpen) setFinOpen(true); else if (finHealth().lv && !finIssuesOpen){ finIssuesOpen = true; K.finI = ''; updateFinMini(); } else { finIssuesOpen = false; setFinOpen(false); K.finI = ''; } });
+/* Con las finanzas a la vista, lo que es de dinero (nóminas, pérdidas) se avisa allí y en producción solo lo que la para. */
+const hsum = (L) => ({lv: L.reduce((a, x) => Math.max(a, x.lv), 0), list: L});
+function prodHealth(){ const H = health(); return secOpen('finanzas') ? hsum(H.list.filter(x => !FIN_KEYS.includes(x.key))) : H; }
+function finHealth(){ return hsum(health().list.filter(x => FIN_KEYS.includes(x.key))); }
+function updateFinMini(){
+  const card = $('#finCard'), on = secOpen('finanzas'); card.hidden = !on; if (!on) return;
+  card.classList.toggle('open', finOpen);
+  const R = estRates(), H = finHealth();
+  card.dataset.h = String(H.lv);
+  setT($('#finNet'), `${R.net >= 0 ? '+' : '−'}${money(Math.abs(R.net))}/s`);
+  $('#finNet').classList.toggle('neg', R.net < 0);
+  const fp = $('#finPill'); fp.dataset.h = String(H.lv);
+  setT($('#finPillTxt'), H.lv ? `${HEALTH_TXT[H.lv]}: ${H.list[0].short}` : 'Cuentas sanas');
+  if (!finOpen) return;
+  const top = Math.max(R.inc, R.exp, 1e-9);
+  setT($('#fmInc'), `+${money(R.inc)}/s`); setT($('#fmExp'), `−${money(R.exp)}/s`);
+  $('#fmIncBar').style.width = (R.inc/top*100).toFixed(1) + '%'; $('#fmExpBar').style.width = (R.exp/top*100).toFixed(1) + '%';
+  setT($('#fmPayK'), S.nomina > 0 ? `Nómina en ${fmtT(S.payT)}` : 'Nómina'); setT($('#fmPay'), S.nomina > 0 ? money(S.nomina*60) : '—');
+  setT($('#fmDebt'), S.arrears > 0 ? `${money(S.debt + S.arrears)}` : money(S.debt));
+  $('#fmDebt').classList.toggle('t-down', S.debt + S.arrears > 0);
+  setT($('#fmMoral'), `${nf0.format(S.moral)} %`); $('#fmMoral').classList.toggle('t-down', S.moral < 60);
+  const fi = $('#finIssues'), show = finIssuesOpen && H.lv > 0; fi.hidden = !show;
+  const ik = show ? H.list.map(x => x.key + x.txt).join() : '';
+  if (ik !== K.finI){ K.finI = ik; fi.innerHTML = H.list.map(x => `<li data-h="${x.lv}"><span>${esc(x.txt)}</span>${x.act ? `<button type="button" class="btn sm ${x.lv > 1 ? 'btn-red' : 'btn-gold'}" data-act="${x.act}">${esc(x.fix || 'Arreglar')}</button>` : x.fix ? `<small>${esc(x.fix)}</small>` : ''}</li>`).join(''); }
+}
 export function updateMine(){
-  const m = S.vein, M = METALS[m], H = health(), eff = efficiency();
-  const key = [S.vein, S.level, S.cap, Object.keys(S.opened).join(), ...MK.map(x => S.opened[x] ? Math.floor(Math.min(1, S.stock[x]/cap(x))*40) + ':' + weight(gps(x)) : unl(x) + ':' + (S.money >= METALS[x].open)), mk(m).price.toFixed(3)].join('|');
+  const m = S.vein, M = METALS[m], H = prodHealth(), eff = efficiency();
+  const key = [S.vein, Object.keys(S.opened).join(), ...MK.map(x => S.opened[x] ? '' : unl(x) + ':' + (S.money >= METALS[x].open))].join('|');
   if (key !== K.vein){ K.vein = key; $('#prodRows').innerHTML = prodRows(); }
+  fillProdRows(); updateFinMini();
   $('#prodCard').classList.toggle('open', prodOpen);
   const pv = prodValue(); setT($('#prodVal'), `${money(pv)}/s`);
   const hp = $('#healthPill'); hp.dataset.h = String(H.lv);

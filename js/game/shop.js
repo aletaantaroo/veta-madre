@@ -24,9 +24,9 @@ export function buyUp(u){
 export function openVein(m){
   const M = METALS[m];
   if (S.opened[m]){ S.vein = m; K.vein = ''; updateUI(); return; }
-  if (!unl(m)){ toast(`El yacimiento de ${M.low} se desbloquea en el nivel ${lvReq(m)}.`); return; }
-  if (S.money < M.open){ toast(`Abrir el yacimiento de ${M.low} cuesta ${money(M.open)}.`); return; }
+  if (!unl(m)){ toast(`El yacimiento de ${M.low} se desbloquea en el nivel ${lvReq(m)}.`, '', 'err'); return; }
+  if (S.money < M.open){ toast(`Abrir el yacimiento de ${M.low} cuesta ${money(M.open)}.`, '', 'err'); return; }
   S.money -= M.open; xpMoney(M.open, .05); S.opened[m] = true; S.vein = m; K.vein = K.mkt = ''; sfx('lv'); emit('layout');
-  toast(`Yacimiento de ${M.low} abierto. Tu equipo ya trabaja esa veta.`, 'up'); log(`Abres el yacimiento de ${M.low} (−${money(M.open)})`, 'up');
+  toast(`Yacimiento de ${M.low} abierto. Tu equipo ya trabaja esa veta.`, 'up', 'ok'); log(`Abres el yacimiento de ${M.low} (−${money(M.open)})`, 'up');
   updateUI();
 }

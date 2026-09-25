@@ -10,7 +10,8 @@ export function resetKeys(){ for (const k in K) K[k] = typeof K[k] === 'boolean'
 /* Llamadas que la lógica hace a la interfaz, sin conocerla. */
 export const updateUI = () => emit('ui');
 export const drawChart = () => emit('chart');
-export const toast = (msg, tone) => emit('toast', msg, tone);
+/* lvl: 'imp' importante · 'ok' respuesta a lo que acabas de hacer · 'err' por qué no ha pasado · 'info' el día a día (solo campana). */
+export const toast = (msg, tone, lvl) => emit('toast', msg, tone, lvl);
 export const sfx = k => emit('sfx', k);
 export const bump = sel => emit('bump', sel);
 export const setTicker = (txt, tone, sel) => emit('ticker', txt, tone, sel);

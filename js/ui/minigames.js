@@ -38,7 +38,7 @@ function cardsHtml(){
 }
 function tkTxt(){ const t = tickets(); return `Fichas: ${'●'.repeat(t)}${'○'.repeat(Math.max(0, maxTickets() - t))} · se recargan a medianoche (${hhmm(0)} del Día ${(S.day || 0) + 1})`; }
 function openGame(id){
-  if (id === 'trade' && !tradeOpen()){ toast(unl('trading') ? 'Compra la Cuenta en un bróker (Tienda → Mejoras → Mercado) para operar.' : `El trading se abre en el nivel ${lvReq('trading')}.`); return; }
+  if (id === 'trade' && !tradeOpen()){ toast(unl('trading') ? 'Compra la Cuenta en un bróker (Tienda → Mejoras → Mercado) para operar.' : `El trading se abre en el nivel ${lvReq('trading')}.`, '', 'err'); return; }
   if (view !== id) bankUnfinished();
   view = VIEWS[id] ? id : 'menu';
   Object.entries(VIEWS).forEach(([k, sel]) => $(sel).hidden = k !== view);
@@ -145,7 +145,7 @@ function cartReady(){
 function drawCartIdle(){ [cW, cH] = sizeCanvas(CV); if (!cW) return; cg.setTransform(dpr, 0, 0, dpr, 0, 0); drawCartScene(0, true); }
 $('#cartOv').addEventListener('click', e => { if (e.target.id === 'cartGo') startCart(); if (e.target.id === 'cartAgain') cartReady(); });
 function startCart(){
-  if (!useTicket('cart')){ toast('No te quedan fichas.'); return; }
+  if (!useTicket('cart')){ toast('No te quedan fichas.', '', 'err'); return; }
   [cW, cH] = sizeCanvas(CV); const u = cH/300;
   C = {u, t: -3, dur: 40, dist: 0, v: 300*u, y: 0, vy: 0, air: false, buf: 0, obs: [], nug: [], got: 0, next: 520*u, over: null, overT: 0, parts: [], shake: 0, tilt: 0};
   overlay($('#cartOv'), ''); CV.focus(); sfx('ui');
@@ -302,7 +302,7 @@ $('#blastOv').addEventListener('click', e => {
 });
 function newZone(i){ const M = B.M; return {c0: .2 + Math.random()*.6, c: 0, w: Math.max(M.w[2], M.w[0] - i*M.w[1]), ph: Math.random()*6.28, amp: i >= M.drift[0] ? M.drift[1] : 0}; }
 function startBlast(){
-  if (!useTicket('blast')){ toast('No te quedan fichas.'); return; }
+  if (!useTicket('blast')){ toast('No te quedan fichas.', '', 'err'); return; }
   const mode = mgState().bmode || 'normal', M = BLAST_MODES[mode];
   [bW, bH] = sizeCanvas(BV);
   B = {mode, M, i: 0, n: 0, dir: 1, speed: M.sp[0], zone: null, res: [], streak: 0, pts: 0, fails: 0, anim: 0, parts: [], shake: 0, flash: 0, label: '', over: false, t: 0};

@@ -42,7 +42,7 @@ document.addEventListener('click', e => {
     case 'resBuy': buyRes(id); break;
     case 'tutOk': closeTut(false); break;
     case 'tutGo': closeTut(true); break;
-    case 'tutReset': S.tutSeen = {}; toast('Los tutoriales volverán a aparecer.'); break;
+    case 'tutReset': S.tutSeen = {}; toast('Los tutoriales volverán a aparecer.', '', 'ok'); break;
     case 'wind': buyWind(); break;
     case 'plant': buyPlant(id); break;
     case 'perk': buyPerk(id); break;
@@ -55,7 +55,7 @@ document.addEventListener('click', e => {
     case 'importYes': doImport(); break;
     case 'importNo': cancelImport(); break;
     case 'bkRestore': restoreBk(id); break;
-    case 'saveNow': save(); toast('Partida guardada.', 'up'); break;
+    case 'saveNow': save(); toast('Partida guardada.', 'up', 'ok'); break;
     case 'resUp': upRes(id); break;
     case 'solar': buySolar(); break;
     case 'repair': repair(); break;

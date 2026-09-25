@@ -49,17 +49,17 @@ function checkObj(){
 }
 export function buyPerk(id){
   const pk = PERKS.find(x => x.id === id); if (!pk || S.perks[id]) return;
-  if (legAvail() < pk.cost){ toast(`Necesitas ${pk.cost} lingotes sin gastar.`); return; }
+  if (legAvail() < pk.cost){ toast(`Necesitas ${pk.cost} lingotes sin gastar.`, '', 'err'); return; }
   S.legSpent = (S.legSpent||0) + pk.cost; S.perks[id] = true;
   if (id === 'p_clients' && S.rep < 2) S.rep = 2;
-  toast(`Ventaja de legado: ${pk.name}`, 'lv'); log(`Tienda de legado: ${pk.name} (−${pk.cost} lingotes)`, 'up'); updateUI();
+  toast(`Ventaja de legado: ${pk.name}`, 'lv', 'ok'); log(`Tienda de legado: ${pk.name} (−${pk.cost} lingotes)`, 'up'); updateUI();
 }
 export function checkAch(){
   checkObj();
   if (S.runStart) MILESTONES.forEach(([k, label, t]) => {
     if (S.recDone[k] || !t()) return;
     S.recDone[k] = true; const tm = runT(), prev = S.records[k];
-    if (!prev || tm < prev){ S.records[k] = tm; toast(prev ? `¡Nuevo récord! ${label} en ${fmtHMS(tm)} (antes ${fmtHMS(prev)})` : `Tiempo registrado: ${label} en ${fmtHMS(tm)}`, 'lv'); }
+    if (!prev || tm < prev){ S.records[k] = tm; toast(prev ? `¡Nuevo récord! ${label} en ${fmtHMS(tm)} (antes ${fmtHMS(prev)})` : `Tiempo registrado: ${label} en ${fmtHMS(tm)}`, 'lv', prev ? 'imp' : 'info'); }
   });
   ACH.forEach(a => {
     if (S.ach[a.id] || !a.test() || (a.timed && runT() > a.timed)) return;
@@ -76,9 +76,9 @@ export const skillReady = s => s.req.every(sk) && (!s.reqAny || s.reqAny.some(sk
 export function learn(id){
   const s = SKILLS.find(x=>x.id===id); if (!s || sk(id)) return;
   const rival = s.ex && SKILLS.find(o => o.ex === s.ex && o.id !== id && sk(o.id));
-  if (rival){ toast(`Ya elegiste «${rival.name}». Son excluyentes: reasigna los puntos si quieres cambiar.`); return; }
-  if (!skillReady(s)){ toast(s.reqAny ? 'Antes elige una de las dos habilidades de la fila de arriba.' : 'Primero aprende las habilidades anteriores de la rama.'); return; }
-  if (S.sp < s.cost){ toast(`Necesitas ${s.cost} puntos. Subes de nivel ganando experiencia.`); return; }
+  if (rival){ toast(`Ya elegiste «${rival.name}». Son excluyentes: reasigna los puntos si quieres cambiar.`, '', 'err'); return; }
+  if (!skillReady(s)){ toast(s.reqAny ? 'Antes elige una de las dos habilidades de la fila de arriba.' : 'Primero aprende las habilidades anteriores de la rama.', '', 'err'); return; }
+  if (S.sp < s.cost){ toast(`Necesitas ${s.cost} puntos. Subes de nivel ganando experiencia.`, '', 'err'); return; }
   const synBefore = SYNERGIES.filter(x => syn(x.id)).map(x => x.id);
   S.sp -= s.cost; S.skills[id] = true;
   SYNERGIES.filter(x => syn(x.id) && !synBefore.includes(x.id)).forEach(x => { toast(`¡Sinergia activada: ${x.name}! ${x.desc}`, 'ach'); if (!silent) emit('synergy', x); });
@@ -88,7 +88,7 @@ export function respec(){
   const cost = Math.floor(S.money*0.1), pts = SKILLS.filter(s=>sk(s.id)).reduce((a,s)=>a+s.cost,0);
   S.money -= cost; S.sp += pts; S.skills = {};
   if (S.lev > 20 || (S.lev === 20 && !has('u_pro'))) S.lev = 5;
-  toast(`Puntos devueltos: ${pts}. Reparte de nuevo.`); log(`Reasignas habilidades (−${money(cost)})`); updateUI();
+  toast(`Puntos devueltos: ${pts}. Reparte de nuevo.`, '', 'ok'); log(`Reasignas habilidades (−${money(cost)})`); updateUI();
 }
 export function prestige(){
   const gain = legacyGain(); if (S.level < lvReq('prestige') || gain < 1) return;
@@ -101,6 +101,6 @@ export function prestige(){
   if (S.perks.p_clients) S.rep = 2;
   if (S.perks.p_level) while (S.level < 5) addXp(xpNeed(S.level) - S.xp + 0.01, true);
   warmMarkets(); emit('sceneReset'); resetKeys(); save();
-  toast(`Vendes la compañía. Tienes ${legAvail()} lingotes sin gastar (+${legAvail()*5} % a todo). Míralos en la tienda de legado.`, 'up');
+  toast(`Vendes la compañía. Tienes ${legAvail()} lingotes sin gastar (+${legAvail()*5} % a todo). Míralos en la tienda de legado.`, 'up', 'imp');
   showSection('mina'); updateUI();
 }

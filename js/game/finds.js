@@ -23,7 +23,7 @@ export function findsStep(el){
     if (announced.has(f.id)) return;
     announced.add(f.id);
     if (silent) return;
-    toast(`Algo brilla en la roca a ${nf0.format(f.d)} m…`, 'up');
+    toast(`Algo brilla en la roca a ${nf0.format(f.d)} m…`, 'up', 'imp');
     queueTut('finds');
     emit('findRevealed', f);
   });
